@@ -292,6 +292,9 @@ namespace hig {
       std::cerr << "error: unable to read input energy." << std::endl;
       return false;
     }
+
+    if(node["smearing"]) scattering_.smearing(node["smearing"].as<real_t>());
+    else scattering_.smearing(0.);
     return true;
   }
     
