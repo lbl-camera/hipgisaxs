@@ -271,7 +271,6 @@ def do_configure(myenv):
         print("error: C toolchain does not match the identified C++ toolchain")
         Exit(1)
     conf.env['TOOLCHAIN'] = toolchain
-    print toolchain
 
     if not conf.CheckCHeader('assert.h'):
         print("error: C header 'assert.h' missing in your compiler installation!")
@@ -439,8 +438,8 @@ if using_mpi:
     CXXCOMPILER = "mpicxx"
     CCCOMPILER = "mpicc"
 else:
-    CXXCOMPILER = "g++"
-    CCCOMPILER = "gcc"
+    CXXCOMPILER = "c++"
+    CCCOMPILER = "cc"
 if using_tau:
   CXXCOMPILER = "tau_cxx.sh"
   CCCOMPILER = "tau_cc.sh"
@@ -548,6 +547,8 @@ if not get_option('clean'):
       other_libs = ["m", "stdc++"]
       if using_mic:
         other_libs.append("pfm")
+    elif platform == "osx":
+        other_libs = [ "m" ]
     else:
       other_libs = ["m", "gomp"]
     ## optional libs
@@ -630,11 +631,10 @@ if not get_option('clean'):
     if not using_single:
         env.Append(CPPDEFINES = ['DOUBLEP'])
 
-
-    if using_yaml:
-        yaml_headers = ['yaml-cpp/yaml.h']
-        yaml_libs = ['yaml-cpp']
-        env.Append(LIBS = yaml_libs)
+    # yaml
+    yaml_headers = ['yaml-cpp/yaml.h']
+    yaml_libs = ['yaml-cpp']
+    env.Append(LIBS = yaml_libs)
 
     ## print stuff
     #for item in sorted(env.Dictionary().items()):
