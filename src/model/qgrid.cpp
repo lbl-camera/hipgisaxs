@@ -150,7 +150,11 @@ namespace hig {
       real_t qpt = qminy + i * dq;
       real_t kf2 = std::pow(qpt / k0, 2);
       real_t tmp = (cos_af * cos_af + cos_ai * cos_ai - kf2) / (2 * cos_af * cos_ai);
+#ifdef DOUBLEP
       tmp = min(tmp, 1.0);
+#else
+      tmp = min(tmp, 1.f);
+#endif
       theta[i] = sgn(qpt) * std::acos(tmp);
     } // for
 

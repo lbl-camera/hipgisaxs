@@ -79,6 +79,7 @@ namespace hig {
   // read and parse the input file
   bool HipGISAXS::construct_input(const char * filename) {
     std::string path(filename);
+    std::cout << filename << std::endl;
     bool err = false;
     if (path.find(".hig") != std::string::npos){
       input_ = new HiGInput();

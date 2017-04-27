@@ -1827,78 +1827,6 @@ namespace hig {
         } // while
         return true;
 
-      case shape_horizontal_cylinder:
-        while(param != shape.param_end()) {
-          switch((*param).second.type()) {
-            case param_radius:
-              max_dim[0] = max((*param).second.max(), (*param).second.min());
-              min_dim[0] = -max_dim[0];
-              max_dim[1] = max((*param).second.max(), (*param).second.min());
-              min_dim[1] = -max_dim[1];
-              break;
-            case param_xsize:
-              std::cerr << "warning: ignoring the xsize values given for hcylinder shape"
-                    << std::endl;
-              break;
-            case param_ysize:
-              std::cerr << "warning: ignoring the ysize values given for hcylinder shape"
-                    << std::endl;
-              break;
-            case param_height:
-              max_dim[2] = 2.0 * max((*param).second.max(), (*param).second.min());
-              min_dim[2] = 0.0;
-              break;
-            case param_edge:
-              std::cerr << "warning: ignoring the edge values given for hcylinder shape"
-                    << std::endl;
-              break;
-            case param_baseangle:
-              // do nothing
-              break;
-            default:
-              std::cerr << "error: invalid parameter found in a shape" << std::endl;
-              return false;
-          } // switch
-          ++ param;
-        } // while
-        return true;
-
-      case shape_random_cylinders:
-        while(param != shape.param_end()) {
-          switch((*param).second.type()) {
-            case param_radius:
-              max_dim[0] = max((*param).second.max(), (*param).second.min());
-              min_dim[0] = -max_dim[0];
-              max_dim[1] = max((*param).second.max(), (*param).second.min());
-              min_dim[1] = -max_dim[1];
-              break;
-            case param_xsize:
-              std::cerr << "warning: ignoring the xsize values given for cylinder shape"
-                    << std::endl;
-              break;
-            case param_ysize:
-              std::cerr << "warning: ignoring the ysize values given for cylinder shape"
-                    << std::endl;
-              break;
-            case param_height:
-              max_dim[2] = 2.0 * max((*param).second.max(), (*param).second.min());
-              min_dim[2] = 0.0;
-              break;
-            case param_edge:
-              std::cerr << "warning: ignoring the edge values given for cylinder shape"
-                    << std::endl;
-              break;
-            case param_baseangle:
-              // do nothing
-              break;
-            default:
-              std::cerr << "error: invalid parameter found in a shape" << std::endl;
-              return false;
-          } // switch
-          ++ param;
-        } // while
-        return true;
-
       case shape_sphere:
         while(param != shape.param_end()) {
           switch((*param).second.type()) {
@@ -1919,8 +1847,12 @@ namespace hig {
                     << std::endl;
               break;
             case param_height:
-              std::cerr << "warning: ignoring the height values given for cylinder shape"
-                    << std::endl;
+              max_dim[0] = max((*param).second.max(), (*param).second.min()); 
+              min_dim[0] = -max_dim[0];
+              max_dim[1] = max((*param).second.max(), (*param).second.min());
+              min_dim[1] = -max_dim[1];
+              max_dim[2] = max((*param).second.max(), (*param).second.min());
+              min_dim[2] = -max_dim[0];
               break;
             case param_edge:
               std::cerr << "warning: ignoring the edge values given for cylinder shape"

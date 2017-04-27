@@ -79,6 +79,7 @@ namespace hig {
                 const std::vector<real_t>&, const std::vector<real_t>&,
                 const RotMatrix_t &, const std::vector<real_t>&, std::vector<complex_t>&);
       bool compute_sphere(const std::vector<real_t>&, const std::vector<real_t>&,
+                const std::vector<real_t>&, const std::vector<real_t>&,
                 const RotMatrix_t &, const std::vector<real_t>&, std::vector<complex_t>&);
       bool compute_prism3(const real_t, const real_t,
                 const std::vector<real_t>&, const std::vector<real_t>&,

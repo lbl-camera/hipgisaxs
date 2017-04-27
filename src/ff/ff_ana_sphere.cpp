@@ -53,12 +53,15 @@ namespace hig {
   bool AnalyticFormFactor::compute_sphere(shape_param_list_t& params, std::vector<complex_t> &ff,
                       vector3_t transvec) {
     std::vector<real_t> r, distr_r;
+    std::vector<real_t> h, distr_h;
     for(shape_param_iterator_t i = params.begin(); i != params.end(); ++ i) {
       switch((*i).second.type()) {
         case param_edge:
         case param_xsize:
         case param_ysize:
         case param_height:
+          param_distribution((*i).second, h, distr_h);
+          break;
         case param_baseangle:
           std::cerr << "warning: ignoring unwanted parameters in sphere" << std::endl;
           break;
@@ -91,7 +94,7 @@ namespace hig {
     transvec_v.push_back(transvec[1]);
     transvec_v.push_back(transvec[2]);
 
-    gff_.compute_sphere(r, distr_r, rot_, transvec_v, ff);
+    gff_.compute_sphere(r, distr_r, h, distr_h, rot_, transvec_v, ff);
 #else
     // on cpu
     std::cerr << "-- Computing sphere FF on CPU ..." << std::endl;

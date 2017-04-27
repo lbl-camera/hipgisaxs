@@ -62,7 +62,11 @@ namespace hig {
       return std::sin(x) / x;
     else
       // Taylor series approx
+#ifdef DOUBLEP
       return (1.- x*x/6. + x*x*x*x/120.);
+#else
+      return (1.f- x*x/6.f + x*x*x*x/120.f);
+#endif
   }
 
 } // namespace hig

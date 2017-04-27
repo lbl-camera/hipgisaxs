@@ -82,8 +82,13 @@ namespace hig {
       kz[i] = - k0 * std::sqrt(sina * sina - layers_[i].one_minus_n2());
 
     for (int i = NL-2; i > -1; i--){
+#ifdef DOUBLEP
       complex_t pij = (kz[i] + kz[i+1])/(2. * kz[i]);
       complex_t mij = (kz[i] - kz[i+1])/(2. * kz[i]);
+#else
+      complex_t pij = (kz[i] + kz[i+1])/(2.f * kz[i]);
+      complex_t mij = (kz[i] - kz[i+1])/(2.f * kz[i]);
+#endif
       real_t z = layers_[i].z_val();
       complex_t exp_p = std::exp(CMPLX_MINUS_ONE_ * (kz[i+1] + kz[i]) * z);
       complex_t exp_m = std::exp(CMPLX_MINUS_ONE_ * (kz[i+1] - kz[i]) * z);
