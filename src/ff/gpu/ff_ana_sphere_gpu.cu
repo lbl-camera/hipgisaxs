@@ -31,7 +31,6 @@
 #include <common/enums.hpp>
 #include <common/constants.hpp>
 #include <numerics/gpu/cu_complex_numeric.cuh>
-#include <numerics/gpu/cu_reductions.cuh>
 #include <utils/gpu/cu_utilities.cuh>
 
 namespace hig {
@@ -63,10 +62,13 @@ namespace hig {
           return make_cuC(REAL_ZERO_, REAL_ZERO_);
       }
       real_t t1 = 2 * PI_ * rz * rz;
-      cucomplex_t expval = cuCexpi(qz * rz);
+      real_t t2 = rz * qp.x;
+      if (t2 < CUTINY_)
+          return make_cuC(REAL_ZERO_, REAL_ZERO_);
+      cucomplex_t expval = cuCexpi(qz * z);
       cucomplex_t p1 = qp * qz;
       // TODO will produce wrong answers for spheres buried inside layers
-      cucomplex_t bess = make_cuC(j1(qp.x)/qp.x, REAL_ZERO_);
+      cucomplex_t bess = make_cuC(j1(t2)/t2, REAL_ZERO_);
       return (t1 * bess * expval);
   }
 
@@ -74,18 +76,18 @@ namespace hig {
 __device__ cucomplex_t integrate(cucomplex_t qx, cucomplex_t qy, cucomplex_t qz,
           real_t radius, real_t height, int N) {
     cucomplex_t out = make_cuC(REAL_ZERO_, REAL_ZERO_);
-    real_t h = height / N; 
-
+    cucomplex_t rval = make_cuC(REAL_ZERO_, REAL_ZERO_);
+    real_t cen = height - radius;
+    real_t dh = height /(real_t) (N-1);
     for (int i = 0; i < N; i++) {
-      real_t z = (i + 1) * h;
-      real_t r = sqrt(radius * radius - z * z);
-      cucomplex_t tff =  CutSphere(qx, qy, qz, r, z);
-      if ( i == 0 || i == N-1)
-        out = out + CutSphere(qx, qy, qz, r, z);
+      real_t z = (i*dh) - cen;
+      real_t rz = sqrt(radius * radius - z * z);
+      if (i == 0 || i == N-1)
+        out = out + CutSphere(qx, qy, qz, rz, z);
       else
-        out = out + 2.f * CutSphere(qx, qy, qz, r, z);
+        out = out + 2.f * CutSphere(qx, qy, qz, rz, z);
     }
-    return 0.5f * h * out;
+    return 0.5f * dh * out;
   }
 
   __global__ void ff_sphere_kernel (unsigned int nqy, unsigned int nqz,
@@ -97,9 +99,7 @@ __device__ cucomplex_t integrate(cucomplex_t qx, cucomplex_t qy, cucomplex_t qz,
     int i_z = blockDim.x * blockIdx.x + threadIdx.x;
 
     // sub-kernel params
-    const int ntrap = 512;
-    const int nthread = 256;
-    const int nblock = 2;
+    const int n_quadrature_pts = 512;
     if (i_z < nqz){
       int i_y = i_z % nqy;
       cucomplex_t c_neg_unit = make_cuC(REAL_ZERO_, REAL_MINUS_ONE_);
@@ -109,7 +109,7 @@ __device__ cucomplex_t integrate(cucomplex_t qx, cucomplex_t qy, cucomplex_t qz,
       for (int i_r = 0; i_r < nr; i_r++)
         for (int i_h = 0; i_h < nh; i_h++) {
           cucomplex_t t1 = cuCexpi(mqz * (h[i_h] - r[i_r]));
-          cucomplex_t fval = integrate(mqx, mqy, mqz, r[i_r], h[i_h], ntrap);
+          cucomplex_t fval = integrate(mqx, mqy, mqz, r[i_r], h[i_h], n_quadrature_pts);
           temp_ff = temp_ff + (distr_h[i_h] * distr_r[i_r] * t1 * fval);
         }
       cucomplex_t temp = transvec_d[0] * mqx + transvec_d[1] * mqy + transvec_d[2] * mqz;
@@ -194,6 +194,15 @@ __device__ cucomplex_t integrate(cucomplex_t qx, cucomplex_t qy, cucomplex_t qz,
     
     construct_output_ff(ff);
 
+    /**
+    for (int i = 0; i < 100; i++) {
+        for (int j = 0; j < 100; j++) {
+            std::cout << ff[i*100 + j].real() << "    ";
+        }
+        std::cout << std::endl;
+    }
+    std::exit(7);
+    **/
     if (n_h > 0) {
       cudaFree(distr_h_d);
       cudaFree(h_d);
