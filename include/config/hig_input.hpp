@@ -250,7 +250,7 @@ namespace hig {
 
       unsigned int read_shape_file_data(const char*);
       unsigned int read_shape_file_object(const char*);
-      #ifdef USE_PARALLEL_HDF5
+      #ifdef USE_HDF5
       unsigned int read_shape_file_hdf5(const char*);
       #endif
 

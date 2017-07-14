@@ -99,8 +99,7 @@ namespace hig {
               vector3_t);
       bool compute_truncated_sphere(shape_param_list_t&, real_t, real_t, std::vector<complex_t>&, 
               vector3_t);
-      bool compute_sawtooth_up();
-      bool compute_sawtooth_down();
+      bool compute_sawtooth();
 
       /* other helpers */ // check if they should be private ...
       bool param_distribution(ShapeParam&, std::vector<real_t>&, std::vector<real_t>&);

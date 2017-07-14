@@ -996,7 +996,7 @@ namespace hig {
     } else if(type == shape_file_object) {
       ObjectShapeReader temp(filename, temp_shape_def, num_triangles);
     } else if(type == shape_file_hdf5) {
-      #ifdef USE_PARALLEL_HDF5
+      #ifdef USE_HDF5
         h5_shape_reader(filename, &temp_shape_def, &num_triangles);
       #else
         std::cerr << "error: use of parallel hdf5 format has not been enabled in your installation. "

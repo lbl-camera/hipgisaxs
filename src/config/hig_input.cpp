@@ -2201,7 +2201,7 @@ namespace hig {
     if(file_type == shape_file_data) {
       return read_shape_file_data(shape_file);
     } else if(file_type == shape_file_hdf5) {
-      #ifdef USE_PARALLEL_HDF5
+      #ifdef USE_HDF5
         return read_shape_file_hdf5(shape_file);
       #else
         std::cerr << "error: use of parallel hdf5 format has not been enabled in your installation. "
@@ -2281,7 +2281,7 @@ namespace hig {
   } // HiGInput::read_shape_file_object()
 
 
-  #ifdef USE_PARALLEL_HDF5
+  #ifdef USE_HDF5
   unsigned int HiGInput::read_shape_file_hdf5(const char* filename) {
     unsigned int num_triangles = 0;
     double* temp_shape_def;
@@ -2315,7 +2315,7 @@ namespace hig {
     #endif // KERNEL2
     return num_triangles;
   } // HiGInput::read_shape_file_hdf5()
-  #endif // USE_PARALLEL_HDF5
+  #endif // USE_HDF5
 
 
   unsigned int HiGInput::read_shape_file_data(const char* filename) {

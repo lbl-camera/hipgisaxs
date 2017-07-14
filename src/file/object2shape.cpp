@@ -29,12 +29,18 @@
 /**
  * constructor: read input object file, convert to shape and write to output file
  */
-o2s_converter::o2s_converter(char* filename, char* outfilename, MPI_Comm comm, bool hdf5) {
+o2s_converter::o2s_converter(char* filename, char* outfilename
+#ifdef USE_MPI
+    , MPI_Comm comm
+#endif // USE_MPI
+    , bool hdf5) {
   filename_ = NULL; outfilename_ = NULL; shape_def_ = NULL;
 
   filename_ = new std::string(filename);
   outfilename_ = new std::string(outfilename);
+#ifdef USE_MPI
   comm_ = comm;
+#endif // USE_MPI
 
   std::vector<vertex_t> vertices;
   //std::vector<poly_index_t> Vn3, Vn4, F3, F4;
@@ -285,7 +291,11 @@ real_t* o2s_converter::convert(char* outfilename,
 
   // call the C HDF5 function
   if(hdf5)
-    s2h_converter(&shape_def_, num_triangles, outfilename, comm_);
+    s2h_converter(&shape_def_, num_triangles, outfilename
+#ifdef USE_MPI
+    , comm_
+#endif // USE_MPI
+    );
   else
     output.close();
 

@@ -16,3 +16,4 @@ site_scons/site_tools/cuda.pyc
 *.sh
 src/analyzer/*.o
 src/analyzer/analyze
+build/

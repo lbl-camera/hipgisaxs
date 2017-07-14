@@ -123,16 +123,9 @@ namespace hig {
           return false;
         } // if
         break;
-      case shape_sawtooth_down:      // downwards sawtooth
-        if(!compute_sawtooth_down()) {
+      case shape_sawtooth:      // sawtooth
+        if(!compute_sawtooth()) {
           std::cerr << "error: something went wrong while computing FF for a sawtooth down"
-                << std::endl;
-          return false;
-        } // if
-        break;
-      case shape_sawtooth_up:        // upwards sawtooth
-        if(!compute_sawtooth_up()) {
-          std::cerr << "error: something went wrong while computing FF for a sawtooth up"
                 << std::endl;
           return false;
         } // if

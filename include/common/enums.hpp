@@ -42,13 +42,8 @@ namespace hig {
     shape_sawtooth,    /* sawtooth (prism along x) (same as above) */
     shape_random_cylinders,
     shape_horizontal_cylinder,
-    // the following have not yet been defined or implemented ... :
-    shape_sawtooth_down,
-    shape_sawtooth_up,
     shape_pyramid,
-    // adding my own
     shape_cone,
-    shape_prism5,
     // custom (numerical)
     shape_custom      /* a custom shape */
   }; // enum ShapeName

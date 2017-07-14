@@ -1,7 +1,7 @@
 /**
  *  Project: HipGISAXS (High-Performance GISAXS)
  *
- *  File: ff_ana_sawtooth_down.cpp
+ *  File: ff_ana_sawtooth_up.cpp
  *  Created: Jul 12, 2012
  *  Modified: Wed 08 Oct 2014 12:17:43 PM PDT
  *
@@ -34,10 +34,10 @@
 namespace hig {
 
   /**
-   * downwards sawtooth
+   * upwards sawtooth
    */
-  bool AnalyticFormFactor::compute_sawtooth_down() {
-    std::cerr << "uh-oh: you reach an unimplemented part of the code, compute_sawtooth_down"
+  bool AnalyticFormFactor::compute_sawtooth() {
+    std::cerr << "uh-oh: you reach an unimplemented part of the code, compute_sawtooth_up"
           << std::endl;
     return false;
     /*for(shape_param_iterator_t i = params.begin(); i != params.end(); ++ i) {
@@ -52,14 +52,19 @@ namespace hig {
       } // switch
     } // for */
 
-/*          Lx = 2 * dims(1);
-            H = dims(2);
-            L = 2 * dims(3);
-            d =0.75;
-            gamma =0.0;
-            FF = Sawtooth_Finf_Matrix(QX,QY,QZ,H,L,d,gamma,Lx) .* exp(1i* (qx*T(1) + qy*T(2) + qz*T(3))) ; */
+/*      RD = Dimension_Distr( dims(1,:) );[rows, NRR] = size(RD); RR = RD(1,:); RRD = RD(2,:);
+        HD = Dimension_Distr( dims(2,:) );[rows, NHH] = size(HD); HH = HD(1,:); HHD = HD(2,:);
+        WD = Dimension_Distr( dims(3,:) );[rows, NWW] = size(WD); WW = WD(1,:); WWD = WD(2,:);
+        AD = Dimension_Distr( dims(4,:) );[rows, AWW] = size(AD); AA = AD(1,:); AAD = AD(2,:);
+        Lx = 2* RR(1);
+        H = HH(1);
+        L = 2* WW(1);
+        d =AA(1);
 
-  } // AnalyticFormFactor::compute_sawtooth_down()
+            gamma =0.0;
+            FF = Sawtooth_Fsup_Matrix(QX,QY,QZ,H,L,d,gamma,Lx) .* exp(1i* (qx*T(1) + qy*T(2) + qz*T(3))) ; */
+
+  } // AnalyticFormFactor::compute_sawtooth_up()
 
 } // namespace hig
 

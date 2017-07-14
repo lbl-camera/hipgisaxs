@@ -1,3 +1,0 @@
-module swap PrgEnv-pgi PrgEnv-gnu
-module load hdf5-parallel
-module load boost/1.51-gnu

@@ -25,12 +25,18 @@
 /**
  * converts shape def to HDF5 format and stores into a hdf5 file
  */
-void s2h_converter(double** shape_def, unsigned int num_triangles, char* hdf5_filename, MPI_Comm comm) {
+void s2h_converter(double** shape_def, unsigned int num_triangles, char* hdf5_filename
+#ifdef USE_MPI
+    , MPI_Comm comm
+#endif // USE_MPI
+    ) {
 	hid_t prop_id, file_id;
 
 	// set up parallel i/o access
 	prop_id = H5Pcreate(H5P_FILE_ACCESS);
+#ifdef USE_MPI
 	H5Pset_fapl_mpio(prop_id, comm, MPI_INFO_NULL);
+#endif // USE_MPI
 
 	file_id = H5Fcreate(hdf5_filename, H5F_ACC_TRUNC, H5P_DEFAULT, prop_id);
 
