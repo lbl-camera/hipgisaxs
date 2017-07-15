@@ -1,25 +1,23 @@
 
-TARGET_SOURCES(
-    hipgisaxs
-    PRIVATE
-	src/ff/ff.cpp
-	src/ff/ff_ana.cpp
-	src/ff/ff_num.cpp
-	src/ff/ff_ana_box.cpp
-	src/ff/ff_ana_cube.cpp
-	src/ff/ff_ana_cylinder.cpp
-    src/ff/ff_ana_prism.cpp
-    src/ff/ff_ana_prism3x.cpp
-    src/ff/ff_ana_prism6.cpp
-	src/ff/ff_ana_pyramid.cpp
-	src/ff/ff_ana_sphere.cpp
-	src/ff/ff_ana_cone.cpp
-    src/ff/ff_ana_sawtooth.cpp
-    src/ff/cpu/ff_num_cpu.cpp
-    src/ff/cpu/ff_tri_cpu.cpp
+#TARGET_SOURCES(
+#    hipgisaxs
+#    PRIVATE
+SET(ffcpu_SOURCES
+	${CMAKE_CURRENT_LIST_DIR}/ff.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ff_ana.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ff_num.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ff_ana_box.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ff_ana_cube.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ff_ana_cylinder.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/ff_ana_prism.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/ff_ana_prism3x.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/ff_ana_prism6.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ff_ana_pyramid.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ff_ana_sphere.cpp
+	${CMAKE_CURRENT_LIST_DIR}/ff_ana_cone.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/ff_ana_sawtooth.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/cpu/ff_num_cpu.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/cpu/ff_tri_cpu.cpp
 )
 
-IF (CUDA_FOUND)
-    ADD_SUBDIRECTORY(gpu)
-    ADD_DEFINITIONS(-DFF_ANA_GPU -DFF_NUM_GPU)
-ENDIF (CUDA_FOUND)
+ADD_LIBRARY(ffcpu ${ffcpu_SOURCES})
