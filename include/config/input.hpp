@@ -3,15 +3,8 @@
  *
  *  File: input.hpp
  *
- *  Author: Dinesh Kumar
- *  Email:  dkumar@lbl.gov
- *  Date create:  
- *  Date modified: 
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
+ *  Author: Dinesh Kumar <dkumar@lbl.gov>
+ *          Abhinav Sarje <asarje@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -21,8 +14,8 @@
  *  NON-COMMERCIAL END USER LICENSE AGREEMENT.
  */
 
-#ifndef INPUT__H
-#define INPUT__H
+#ifndef __INPUT_H__
+#define __INPUT_H__
 
 #include <common/typedefs.hpp>
 #include <model/shape.hpp>
@@ -36,8 +29,11 @@
 
 
 namespace hig {
+
   class Input {
+
     protected:
+
       shape_list_t shapes_;
       layer_list_t layers_;
       layer_key_t layer_key_map_;
@@ -49,6 +45,10 @@ namespace hig {
       FittingParams fitting_;
       
     public:
+
+      Input() { }
+      ~Input() { }
+
       virtual bool construct_input_config(const char *) { return false; }
       virtual bool update_params(const map_t & params) { return false; }
 
@@ -62,6 +62,31 @@ namespace hig {
       virtual const DetectorParams & detector() const { return detector_; }
       virtual const ComputeParams & compute() const { return compute_; }
       virtual const FittingParams & fitting() const { return fitting_; }
+
+      virtual real_t analysis_tolerance(int) const { }
+      virtual real_t analysis_regularization(int) const { }
+      virtual int num_analysis_algos() const { }
+      virtual FittingAlgorithmName analysis_algo(int n) const { }
+      virtual bool analysis_algo_param(int i, const std::string pstr, real_t& val) const { }
+      virtual FittingDistanceMetric analysis_distance_metric(int i) const { }
+
+      virtual const std::string& path() const { }
+      virtual const std::string& runname() const { }
+
+      virtual std::vector<std::string> fit_param_keys() const { }
+      virtual std::vector <std::pair <real_t, real_t> > fit_param_limits() const { }
+      virtual real_vec_t fit_param_step_values() const { }
+      virtual std::vector <real_t> fit_param_init_values() const { }
+      virtual real_t param_space_mean(const std::string& key) const { }
+      virtual std::string reference_data_path(int i) const { }
+      virtual std::string reference_data_mask(int i) const { }
+      virtual int num_fit_params() const { }
+      virtual real_t reference_region_min_x(int i) const { }
+      virtual real_t reference_region_min_y(int i) const { }
+      virtual real_t reference_region_max_x(int i) const { }
+      virtual real_t reference_region_max_y(int i) const { }
   };
+
 } // namespace
-#endif // INPUT__H
+
+#endif // __INPUT_H__

@@ -3,14 +3,16 @@
  *
  *  File: analysis_algorithm.hpp
  *  Created: Feb 02, 2014
- *  Modified: Wed 08 Oct 2014 12:10:40 PM PDT
+ *
+ *  Author: Abhinav Sarje <asarje@lbl.gov>
+ *
  */
 
 #ifndef __ANALYSIS_ALGORITHM_HPP__
 #define __ANALYSIS_ALGORITHM_HPP__
 
 #include <common/typedefs.hpp>
-#include <analyzer/enums.hpp>
+//#include <analyzer/enums.hpp>
 #include <analyzer/objective_func.hpp>
 
 
@@ -20,32 +22,26 @@ namespace hig {
 
     protected:
       bool is_valid_;
-      FittingAlgorithmName name_;    // algorithm name
-      ObjectiveFunction* obj_func_;  // the objective function
-      real_t tol_;            // error tolerance
-      int max_iter_;          // max num of iterations
-      int max_hist_;          // max history
-      int num_params_;        // number of parameters
-      real_vec_t x0_;        // initial param values
-      real_vec_t xn_;        // final param values
+      FittingAlgorithmName name_;   // algorithm name
+      ObjectiveFunction* obj_func_; // the objective function
+      real_t tol_;                  // error tolerance
+      int max_iter_;                // max num of iterations
+      int max_hist_;                // max history
+      int num_params_;              // number of parameters
+      real_vec_t x0_;               // initial param values
+      real_vec_t xn_;               // final param values
 
     public:
-      AnalysisAlgorithm(): max_iter_(200), max_hist_(100), tol_(1e-4), num_params_(0) { }
-      /*AnalysisAlgorithm(ObjectiveFunction* func):
-          max_iter_(200), max_hist_(100), tol_(1e-4) {
-        obj_func_ = func;
-        num_params_ = (*obj_func_).num_fit_params();
-        x0_ = (*obj_func_).fit_param_init_values();
-      } // AnalysisAlgorithm()*/
-
+      AnalysisAlgorithm(): max_iter_(200), max_hist_(200), tol_(1e-6), num_params_(0) { }
       ~AnalysisAlgorithm() { }
 
       bool init_params(const real_vec_t& X0);
-      void set_objective_function(ObjectiveFunction* func) { obj_func_= func;  }
+      void set_objective_function(ObjectiveFunction* func) { obj_func_= func; }
 
-      real_vec_t get_param_values() { return xn_; }
+      real_vec_t get_param_values() const { return xn_; }
+      real_t tolerance() const { return tol_; }
 
-      virtual bool run(int, char**, int) = 0;
+      virtual bool run(int, char**, int, int) = 0;
 
     }; // class AnalysisAlgorithm
 

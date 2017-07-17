@@ -5,11 +5,6 @@
  *  Created: Jun 09, 2012
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -19,8 +14,8 @@
  *  NON-COMMERCIAL END USER LICENSE AGREEMENT.
  */
 
-#ifndef _STRUCTURE_HPP_
-#define _STRUCTURE_HPP_
+#ifndef __STRUCTURE_HPP__
+#define __STRUCTURE_HPP__
 
 #include <string>
 #include <vector>
@@ -167,17 +162,26 @@ namespace hig {
     friend class Structure;
   }; // class GrainScaling
 
+
   class Rotation {
-    private: 
-      char axis_;    // x y or z
+
+    private:
+
+      char axis_;         // 'x' 'y' or 'z'
       std::string stat_;
       vector2_t angles_;
-      real_t mean_;  // for gaussian
-      real_t sd_;  // for gaussian
+      real_t mean_;       // for gaussian
+      real_t sd_;         // for gaussian
       bool mean_set_;
+      real_t location_;   // location parameter for various distribution (= mean in gaussian)
+      real_t scale_;      // scale parameter for various distributions (= sd in gaussian)
+      bool location_set_;
 
     public:
-      Rotation() : axis_('n'), mean_(0), sd_(0), mean_set_(false) { }
+
+      Rotation() : axis_('n'),
+                   mean_(0), sd_(0), mean_set_(false),
+                   location_(0), scale_(0), location_set_(false) { }
       ~Rotation() { }
       void init();
 
@@ -187,6 +191,8 @@ namespace hig {
       vector2_t angles() const { return angles_; }
       real_t angle_mean() const { return mean_; }
       real_t angle_sd() const { return sd_; }
+      real_t angle_location() const { return location_; }
+      real_t angle_scale() const { return scale_; }
 
       // setters 
       void stat(std::string stat) { stat_ = stat; }
@@ -199,24 +205,31 @@ namespace hig {
 
       void angle_mean(real_t val) { mean_ = val; mean_set_ = true; }
       void angle_sd(real_t val) { sd_ = val; }
-#ifdef DEBUG
-      void print(){
-        std::cout << "orientation = { axis: " << axis_ << ", stat: " << stat_ << ", angles: [ " 
-                   << angles_[0] << " " << angles_[1] 
-                   << " ], mean: " << mean_ << ", std: " << sd_ << " }" << std::endl; 
-      }
-#endif
-    }; // class Rotation
+      void angle_location(real_t val) { location_ = val; location_set_ = true; }
+      void angle_scale(real_t val) { scale_ = val; }
+
+      #ifdef DEBUG
+        void print(){
+          std::cout << "orientation = { axis: " << axis_ << ", stat: " << stat_ << ", angles: [ " 
+                     << angles_[0] << " " << angles_[1] 
+                     << " ], mean: " << mean_ << ", std: " << sd_ << " }" << std::endl; 
+        }
+      #endif
+
+  }; // class Rotation
+
 
   class GrainOrientations {
 
     private:
-      std::string stat_;    // "single", "range", "random", "filename.ori" - change to enum?
+
+      std::string stat_;   // "single", "range", "random", "filename.ori" - change to enum?
       Rotation rot1_;      // rotation 1
       Rotation rot2_;      // rotation 2
       Rotation rot3_;      // rotation 3
 
     public:
+
       GrainOrientations();
       ~GrainOrientations();
 
@@ -251,6 +264,13 @@ namespace hig {
       void rot2_anglesd(real_t m) { rot2_.angle_sd(m); }
       void rot3_anglesd(real_t m) { rot3_.angle_sd(m); }
 
+      void rot1_anglelocation(real_t m) { rot1_.angle_location(m); }
+      void rot2_anglelocation(real_t m) { rot2_.angle_location(m); }
+      void rot3_anglelocation(real_t m) { rot3_.angle_location(m); }
+      void rot1_anglescale(real_t m) { rot1_.angle_scale(m); }
+      void rot2_anglescale(real_t m) { rot2_.angle_scale(m); }
+      void rot3_anglescale(real_t m) { rot3_.angle_scale(m); }
+
       bool update_param(const std::string&, real_t);
 
       friend class Ensemble;
@@ -264,8 +284,11 @@ namespace hig {
         StatisticType stat_;
         unsigned int min_;  // repetitions have to be integers
         unsigned int max_;
-        real_t mean_;    // for gaussian
-        real_t sd_;    // for gaussian
+        real_t mean_;       // for gaussian
+        real_t sd_;         // for gaussian
+        real_t location_;   // location parameter for various distribution (= mean in gaussian)
+        real_t scale_;      // scale parameter for various distributions (= sd in gaussian)
+        // TODO: get rid of mean and sd, and replace by location and scale ...
 
       public:
         Repetition(): stat_(stat_null), min_(0), max_(0), mean_(0), sd_(0) { }
@@ -446,6 +469,13 @@ namespace hig {
       void grain_orientation_rot2_sd(real_t c) { orientations_.rot2_anglesd(c); }
       void grain_orientation_rot3_sd(real_t c) { orientations_.rot3_anglesd(c); }
 
+      void grain_orientation_rot1_location(real_t c) { orientations_.rot1_anglelocation(c); }
+      void grain_orientation_rot2_location(real_t c) { orientations_.rot2_anglelocation(c); }
+      void grain_orientation_rot3_location(real_t c) { orientations_.rot3_anglelocation(c); }
+      void grain_orientation_rot1_scale(real_t c) { orientations_.rot1_anglescale(c); }
+      void grain_orientation_rot2_scale(real_t c) { orientations_.rot2_anglescale(c); }
+      void grain_orientation_rot3_scale(real_t c) { orientations_.rot3_anglescale(c); }
+
       void grain_orientation_stat(std::string s) { orientations_.stat(s); }
 
       void distribution(std::string s) { distribution_ = s; }
@@ -535,10 +565,17 @@ namespace hig {
       void grain_orientation_rot2_anglesd(real_t a) { ensemble_.grain_orientation_rot2_sd(a); }
       void grain_orientation_rot3_anglesd(real_t a) { ensemble_.grain_orientation_rot3_sd(a); }
 
+      void grain_orientation_rot1_anglelocation(real_t a) { ensemble_.grain_orientation_rot1_location(a); }
+      void grain_orientation_rot2_anglelocation(real_t a) { ensemble_.grain_orientation_rot2_location(a); }
+      void grain_orientation_rot3_anglelocation(real_t a) { ensemble_.grain_orientation_rot3_location(a); }
+      void grain_orientation_rot1_anglescale(real_t a) { ensemble_.grain_orientation_rot1_scale(a); }
+      void grain_orientation_rot2_anglescale(real_t a) { ensemble_.grain_orientation_rot2_scale(a); }
+      void grain_orientation_rot3_anglescale(real_t a) { ensemble_.grain_orientation_rot3_scale(a); }
+
       void grain_refindex_delta(real_t d) { grain_.refindex_delta(d); }
       void grain_refindex_beta(real_t d) { grain_.refindex_beta(d); }
 
-            // set grain scaling parameters
+      // set grain scaling parameters
       void grain_scaling_a_stat (StatisticType s) { grain_.scaling_.dist_[0] = s; }
       void grain_scaling_b_stat (StatisticType s) { grain_.scaling_.dist_[1] = s; }
       void grain_scaling_c_stat (StatisticType s) { grain_.scaling_.dist_[2] = s; }
@@ -629,12 +666,12 @@ namespace hig {
       vector3_t grain_transvec() const { return grain_.transvec_; }
 
       // scaling related params
-      bool grain_scaling_is_dist () const {
-        for (int i = 0; i < 3; i++)
-          if ( grain_.scaling_.stddev_[i] > 0 )
-            return true;
+      bool grain_scaling_is_dist() const {
+        for(int i = 0; i < 3; i++)
+          if(grain_.scaling_.stddev_[i] > 0) return true;
         return false;
-      }
+      } // grain_scaling_is_dist()
+      bool grain_scaling_is_dist(int i) const { return (grain_.scaling_.dist_[i] != stat_none); }
 
       vector3_t grain_scaling() const { return grain_.scaling_.mean_; }
       vector3_t grain_scaling_stddev() const { return grain_.scaling_.stddev_; }
@@ -675,6 +712,13 @@ namespace hig {
       real_t rotation_rot2_anglesd() const { return ensemble_.orientations_.rot2().angle_sd(); }
       real_t rotation_rot3_anglesd() const { return ensemble_.orientations_.rot3().angle_sd(); }
 
+      real_t rotation_rot1_anglelocation() const { return ensemble_.orientations_.rot1().angle_location(); }
+      real_t rotation_rot2_anglelocation() const { return ensemble_.orientations_.rot2().angle_location(); }
+      real_t rotation_rot3_anglelocation() const { return ensemble_.orientations_.rot3().angle_location(); }
+      real_t rotation_rot1_anglescale() const { return ensemble_.orientations_.rot1().angle_scale(); }
+      real_t rotation_rot2_anglescale() const { return ensemble_.orientations_.rot2().angle_scale(); }
+      real_t rotation_rot3_anglescale() const { return ensemble_.orientations_.rot3().angle_scale(); }
+
       /* modifiers (updates) */
       bool update_param(const std::string&, real_t);
 
@@ -694,4 +738,4 @@ namespace hig {
 
 } // namespace hig
 
-#endif /* _STRUCTURE_HPP_ */
+#endif // __STRUCTURE_HPP__

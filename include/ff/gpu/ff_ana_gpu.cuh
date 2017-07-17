@@ -3,14 +3,8 @@
  *
  *  File: ff_ana_gpu.cuh
  *  Created: Oct 16, 2012
- *  Modified: Wed 08 Oct 2014 12:15:06 PM PDT
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -57,13 +51,12 @@ namespace hig {
 
       void grid_size(unsigned int, unsigned int);
 
-      bool compute_cube(const real_t, const real_t,
-                const std::vector<real_t>&, const std::vector<real_t>&,
-                const RotMatrix_t &, const std::vector<real_t>&, std::vector<complex_t>&);
-
       bool compute_box(const real_t, const real_t,
                 const std::vector<real_t>&, const std::vector<real_t>&,
                 const std::vector<real_t>&, const std::vector<real_t>&,
+                const std::vector<real_t>&, const std::vector<real_t>&,
+                const RotMatrix_t &, const std::vector<real_t>&, std::vector<complex_t>&);
+      bool compute_cube(const real_t, const real_t,
                 const std::vector<real_t>&, const std::vector<real_t>&,
                 const RotMatrix_t &, const std::vector<real_t>&, std::vector<complex_t>&);
       bool compute_cylinder(const real_t, const real_t,

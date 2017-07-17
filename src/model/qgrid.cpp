@@ -61,7 +61,11 @@ namespace hig {
         real_t qpt = min_point[0] + i * dq;
         real_t kf2    = std::pow(qpt / k0, 2);
         real_t tmp = (cos_af * cos_af + cos_ai * cos_ai - kf2)/(2 * cos_af * cos_ai);
+#ifdef DOUBLEP
         if (tmp > 1.0) tmp = 1.0;
+#else
+        if (tmp > 1.f) tmp = 1.f;
+#endif
         theta[i] = sgn(qpt) * std::acos(tmp);
       }
 
@@ -172,8 +176,10 @@ namespace hig {
     } // for
 
     // sanity check
-    if(qy_.size() != nqy || qz_.size() != nqz) {
+    if(qy_.size() != nqy * nqz || qz_.size() != nqy * nqz) {
       std::cerr << "error: mismatch in the needed qgrid size and the constructed one" << std::endl;
+      std::cerr << "error:    " << qy_.size() << " != " << nqy << std::endl;
+      std::cerr << "error:    " << qz_.size() << " != " << nqz << std::endl;
       return false;
     } // if
 

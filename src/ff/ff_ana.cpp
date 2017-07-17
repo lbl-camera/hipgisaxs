@@ -5,11 +5,6 @@
  *  Created: Jul 12, 2012
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -81,14 +76,14 @@ namespace hig {
 //    #endif // TIME_DETAIL_1
 
     switch(shape) {
-      case shape_cube:            // cube 
+      case shape_cube:            // cube
         if(!compute_cube(nqx_, nqy_, nqz_, ff, params, tau, eta, transvec)) {
           std::cerr << "error: something went wrong while computing FF for a cube"
-                << std::endl;
+            << std::endl;
           return false;
         } // if
         break;
-      case shape_box:            // box
+      case shape_box:            // cube or box
         if(!compute_box(nqx_, nqy_, nqz_, ff, shape, params, tau, eta, transvec)) {
           std::cerr << "error: something went wrong while computing FF for a box"
                 << std::endl;

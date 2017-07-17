@@ -5,11 +5,6 @@
  *  Created:  Friday the 13th (11-13-2015)
  *
  *  Author: Dinesh Kumar <dkumar@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -19,6 +14,8 @@
  *  NON-COMMERCIAL END USER LICENSE AGREEMENT.
  */
 
+#ifdef YAML
+
 #include <cfloat>
 #include <config/yaml_input.hpp>
 #include <utils/utilities.hpp>
@@ -27,6 +24,7 @@
 
 
 namespace hig {
+
   YAMLInput::YAMLInput() {
     shapes_.clear();
     unitcells_.clear();
@@ -557,3 +555,4 @@ namespace hig {
 
 } // namespace hig
 
+#endif // YAML

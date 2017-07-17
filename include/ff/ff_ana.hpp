@@ -3,14 +3,8 @@
  *
  *  File: ff_ana.hpp
  *  Created: Jul 12, 2012
- *  Modified: Wed 08 Oct 2014 12:13:01 PM PDT
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -72,13 +66,12 @@ namespace hig {
 
     private:
       /* compute ff for various shapes */
-      bool compute_cube(unsigned , unsigned, unsigned, std::vector<complex_t> &, 
-               shape_param_list_t&, real_t, real_t, vector3_t &);
-
       bool compute_box(unsigned int nqx, unsigned int nqy, unsigned int nqz,
               std::vector<complex_t>& ff,
               ShapeName shape, shape_param_list_t& params,
               real_t tau, real_t eta, vector3_t &transvec);
+      bool compute_cube(unsigned , unsigned, unsigned, std::vector<complex_t> &,
+              shape_param_list_t&, real_t, real_t, vector3_t &);
       bool compute_cylinder(shape_param_list_t&, real_t, real_t,
               std::vector<complex_t>&, vector3_t);
       bool compute_horizontal_cylinder(real_t, real_t, shape_param_list_t&, vector3_t,

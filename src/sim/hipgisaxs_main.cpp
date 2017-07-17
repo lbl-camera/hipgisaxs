@@ -5,11 +5,6 @@
  *  Created: Jun 14, 2012
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -28,7 +23,7 @@
 #include <cmath>
 #include <iomanip>
 #ifdef _OPENMP
-#include <omp.h>
+  #include <omp.h>
 #endif // _OPENMP
 
 #include <woo/timer/woo_boostchronotimers.hpp>
@@ -47,6 +42,15 @@
   #include <init/mic/init_mic.hpp>
 #endif
 
+
+// TODO ... put this in a better place
+#define VERBOSE_LEVEL_ZERO 0
+#define VERBOSE_LEVEL_ONE  1
+#define VERBOSE_LEVEL_TWO  2
+
+#ifndef VERBOSE_LEVEL
+#define VERBOSE_LEVEL VERBOSE_LEVEL_ONE
+#endif
 
 namespace hig {
 
@@ -84,8 +88,13 @@ namespace hig {
       input_ = new HiGInput();
       err = input_->construct_input_config(filename);
     } else if ((path.find(".yaml") != std::string::npos ) || (path.find(".yml") != std::string::npos)) {
-      input_ = new YAMLInput();
-      err = input_->construct_input_config(filename);
+      #ifdef YAML
+        input_ = new YAMLInput();
+        err = input_->construct_input_config(filename);
+      #else
+        std::cerr << "error: HipGISAXS was built without YAML support" << std::endl;
+        return false;
+      #endif
     } else {
       std::cerr << "error: unrecogonizable files extension" << std::endl;
       return false;
@@ -120,9 +129,9 @@ namespace hig {
     sim_comm_ = root_comm_;
 
     if(master) {
-      std::cerr << std::endl
+      std::cout << std::endl
           << "*******************************************************************" << std::endl
-          << "******************** HipGISAXS v1.0-beta Testing ******************" << std::endl
+          << "************************* HipGISAXS 1.0 ***************************" << std::endl
           << "*******************************************************************" << std::endl
           << std::endl;
     } // if
@@ -144,7 +153,8 @@ namespace hig {
       return false;
     } // if-else
 
-    std::cerr << "**                    Wavelength: " << lambda << std::endl;
+    if(master) std::cout << "**                    Wavelength: " << lambda << std::endl;
+
     k0_ = 2 * PI_ / lambda;
 
     #ifdef FILEIO
@@ -186,20 +196,20 @@ namespace hig {
 
     #ifdef _OPENMP
       if(master)
-        std::cerr << "++      Number of OpenMP threads: "
+        std::cout << "++      Number of OpenMP threads: "
               << omp_get_max_threads() << std::endl;
     #endif
 
     #if defined USE_GPU || defined FF_ANA_GPU || defined FF_NUM_GPU
-      if(master) std::cerr << "-- Waking up GPU(s) ..." << std::flush;
+      if(master) std::cout << "-- Waking up GPU(s) ..." << std::flush;
       init_gpu();
-      if(master) std::cerr << " it woke up!" << std::endl;
+      if(master) std::cout << " it woke up!" << std::endl;
     #elif defined USE_MIC
-      if(master) std::cerr << "-- Waking up MIC(s) ..." << std::flush;
+      if(master) std::cout << "-- Waking up MIC(s) ..." << std::flush;
       init_mic();
-      if(master) std::cerr << " done." << std::endl;
+      if(master) std::cout << " done." << std::endl;
     #else
-      if(master) std::cerr << "-- Not set up to use any accelerator!" << std::endl;
+      if(master) std::cout << "-- Not set up to use any accelerator!" << std::endl;
     #endif
 
     return true;
@@ -226,10 +236,10 @@ namespace hig {
   bool HipGISAXS::override_qregion(unsigned int ny, unsigned int nz, unsigned int i) {
 
     OutputRegionType type = input_->compute().output_region().type_;
-    real_t miny = input_->fitting().reference_region_min_x(i);
-    real_t minz = input_->fitting().reference_region_min_y(i);
-    real_t maxy = input_->fitting().reference_region_max_x(i);
-    real_t maxz = input_->fitting().reference_region_max_y(i);
+    real_t miny = input_->reference_region_min_x(i);
+    real_t minz = input_->reference_region_min_y(i);
+    real_t maxy = input_->reference_region_max_x(i);
+    real_t maxz = input_->reference_region_max_y(i);
 
     #ifdef USE_MPI
       // this is done at the universal level
@@ -302,7 +312,7 @@ namespace hig {
     else num_tilt = (tilt_max - tilt_min) / tilt_step + 1;
 
     if(master) {
-      std::cerr << "**                  Num alphai: " << num_alphai << std::endl
+      std::cout << "**                  Num alphai: " << num_alphai << std::endl
             << "**                     Num phi: " << num_phi << std::endl
             << "**                    Num tilt: " << num_tilt << std::endl;
     } // if
@@ -408,7 +418,7 @@ namespace hig {
           real_t tilt_rad = tilt * PI_ / 180;
 
           if(tmaster) {
-            std::cerr << "-- Computing GISAXS "
+            std::cout << "-- Computing GISAXS "
                   << i * num_phi * num_tilt + j * num_tilt + k + 1 << " / "
                   << num_alphai * num_phi * num_tilt
                   << " [alphai = " << alpha_i << ", phi = " << phi
@@ -430,10 +440,10 @@ namespace hig {
 
           #ifdef FILEIO
           if(tmaster) {
-            std::cerr << "-- Constructing GISAXS image ... " << std::flush;
+            std::cout << "-- Constructing GISAXS image ... " << std::flush;
             Image img(ncol_, nrow_, input_->compute().palette());
             img.construct_image(final_data, 0); // merge this into the contructor ...
-            std::cerr << "done." << std::endl;
+            std::cout << "done." << std::endl;
 
             if(x_max < x_min) x_max = x_min;
             // define output filename
@@ -446,20 +456,20 @@ namespace hig {
                       "/img_ai=" + alphai_s + "_rot=" + phi_s +
                       "_tilt=" + tilt_s + ".tif");
 
-            std::cerr << "**                    Image size: " << ncol_  << " x " << nrow_
+            std::cout << "**                    Image size: " << ncol_  << " x " << nrow_
                   << std::endl;
-            std::cerr << "-- Saving image in " << output << " ... " << std::flush;
+            std::cout << "-- Saving image in " << output << " ... " << std::flush;
             img.save(output);
-            std::cerr << "done." << std::endl;
+            std::cout << "done." << std::endl;
 
             // save the actual data into a file also
             std::string data_file(output_subdir_ + 
                     "/gisaxs_ai=" + alphai_s + "_rot=" + phi_s +
                     "_tilt=" + tilt_s + ".out");
-            std::cerr << "-- Saving raw data in " << data_file << " ... "
+            std::cout << "-- Saving raw data in " << data_file << " ... "
                 << std::flush;
             save_gisaxs(final_data, data_file);
-            std::cerr << "done." << std::endl;
+            std::cout << "done." << std::endl;
           } // if
           #else
             for (int i = 0; i < nrow_;  i++){
@@ -579,16 +589,16 @@ namespace hig {
           alphai_b << alpha_i; alphai_s = alphai_b.str();
           std::string output(output_subdir_ + 
                     "/img_ai=" + alphai_s + "_averaged.tif");
-          std::cerr << "-- Saving averaged image in " << output << " ... " << std::flush;
+          std::cout << "-- Saving averaged image in " << output << " ... " << std::flush;
           img.save(output);
-          std::cerr << "done." << std::endl;
+          std::cout << "done." << std::endl;
 
           // save the actual data into a file also
           std::string data_file(output_subdir_ + 
                   "/gisaxs_ai=" + alphai_s + "_averaged.out");
-          std::cerr << "-- Saving averaged raw data in " << data_file << " ... " << std::flush;
+          std::cout << "-- Saving averaged raw data in " << data_file << " ... " << std::flush;
           save_gisaxs(averaged_data, data_file);
-          std::cerr << "done." << std::endl;
+          std::cout << "done." << std::endl;
 
           delete[] averaged_data;
         } // if
@@ -602,7 +612,7 @@ namespace hig {
 
     sim_timer.stop();
     if(master) {
-      std::cerr << "**         Total simulation time: " << sim_timer.elapsed_msec() << " ms."
+      std::cout << "**         Total simulation time: " << sim_timer.elapsed_msec() << " ms."
             << std::endl;
     } // if
 
@@ -640,12 +650,10 @@ namespace hig {
     if(tilt_step == 0) num_tilt = 1;
     else num_tilt = (tilt_max - tilt_min) / tilt_step + 1;
     if(num_alphai > 1 || num_phi > 1 || num_tilt > 1) {
-      if(master)
-        std::cerr << "error: currently you can simulate only for single "
-              << "alpha_i, phi and tilt angles"
-              << std::endl;
+      if(master) std::cerr << "error: currently you can simulate only for single "
+                           << "alpha_i, phi and tilt angles for fitting!" << std::endl;
       // TODO ...
-      return -1.0;
+      return false;
     } // if
 
     woo::BoostChronoTimer sim_timer;
@@ -654,7 +662,9 @@ namespace hig {
     real_t alphai = alpha_i * PI_ / 180;
     real_t phi_rad = phi_min * PI_ / 180;
     real_t tilt_rad = tilt_min * PI_ / 180;
-    if(master) std::cerr << "-- Computing GISAXS ... " << std::endl << std::flush;
+    #if VERBOSE_LEVEL > VERBOSE_LEVEL_ZERO
+    if(master) std::cout << "-- Computing GISAXS ... " << std::endl << std::flush;
+    #endif
     /* run a gisaxs simulation */
     if(!run_gisaxs(alpha_i, alphai, phi_rad, tilt_rad, final_data,
           #ifdef USE_MPI
@@ -665,9 +675,11 @@ namespace hig {
       return -1.0;
     } // if
     sim_timer.stop();
+    #if VERBOSE_LEVEL > VERBOSE_LEVEL_ZERO
     if(master)
-      std::cerr << "**        Total Simulation time: " << sim_timer.elapsed_msec()
+      std::cout << "**        Total Simulation time: " << sim_timer.elapsed_msec()
             << " ms." << std::endl;
+    #endif
 
     return true;
   } // HipGISAXS::compute_gisaxs()
@@ -753,9 +765,11 @@ namespace hig {
       // get the shape
       // compute t, lattice, ndoms, dd, nn, id etc.
 
+      #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
       if(smaster) {
-        std::cerr << "-- Processing structure " << s_num + 1 << " ..." << std::endl;
+        std::cout << "-- Processing structure " << s_num + 1 << " ..." << std::endl;
       } // if
+      #endif
 
       const Structure *curr_struct = &((*s).second);
       Lattice *curr_lattice = (Lattice*) curr_struct->lattice();
@@ -783,44 +797,48 @@ namespace hig {
       int num_grains = ndx;
 
       int r1axis, r2axis, r3axis;
-      if ( struct_dist == "bragg" ){
+      if(struct_dist == "bragg") {
         r1axis = 2;
         r2axis = 0;
         r3axis = 1;
         // TODO this is a hack
-        if (dd) delete [] dd;
-        dd = new real_t[ndx * 3];
-        for (int i = 0; i < ndx * 3; i++) dd[i] = REAL_ZERO_;
+        if(dd) delete[] dd;
+        dd = new (std::nothrow) real_t[ndx * 3];
+        for(int i = 0; i < ndx * 3; i++) dd[i] = REAL_ZERO_;
       } else {
         r1axis = (int) (*s).second.rotation_rot1()[0];
         r2axis = (int) (*s).second.rotation_rot2()[0];
         r3axis = (int) (*s).second.rotation_rot3()[0];
-      }
+      } // if-else
 
+      #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
       if(smaster) {
-        std::cerr << "-- Grains: " << num_grains << std::endl;
+        std::cout << "-- Grains: " << num_grains << std::endl;
       } // if
+      #endif
 
       /* grain scalings */
-      std::vector<vector3_t> scaling_samples;
-      std::vector<real_t> scaling_weights;
       bool is_scaling_distribution = false;
-      if (s->second.grain_scaling_is_dist()) {
-        is_scaling_distribution = true;
-        std::vector<StatisticType> dist = s->second.grain_scaling_dist();
-        vector3_t mean = s->second.grain_scaling();
-        vector3_t stddev = s->second.grain_scaling_stddev();
-        std::vector<int> scaling_nvals = s->second.grain_scaling_nvals();
-        // if sigma is zeros set sampling count to 1
-        for (int i = 0; i < 3; i++)
-          if (stddev[i] == 0)
-            scaling_nvals[i] = 1;
-        construct_scaling_distribution(dist, mean, stddev, scaling_nvals, scaling_samples,
-                     scaling_weights);
-      } else {
-        scaling_samples.push_back(s->second.grain_scaling());
-        scaling_weights.push_back(1.);
-      } // if-else
+      std::vector<StatisticType> dist = s->second.grain_scaling_dist();
+      vector3_t mean, stddev;
+      std::vector<int> scaling_nvals;
+      for(int i = 0; i < 3; ++ i) {
+        if(s->second.grain_scaling_is_dist(i)) {
+          is_scaling_distribution = true;
+          mean[i] = s->second.grain_scaling()[i];
+          stddev[i] = s->second.grain_scaling_stddev()[i];
+          // if sigma is zero set sampling count to 1
+          if(stddev[i] == 0) scaling_nvals.push_back(1);
+          else scaling_nvals.push_back(s->second.grain_scaling_nvals()[i]);
+        } else {
+          mean[i] = s->second.grain_scaling()[i];
+          stddev[i] = 0;
+          scaling_nvals.push_back(1);
+        } // if-else
+      } // for
+      std::vector<real_t> scaling_samples, scaling_weights;
+      construct_scaling_distribution(dist, mean, stddev, scaling_nvals,
+                                     scaling_samples, scaling_weights);
 
       /* grain repetitions */
       bool is_grain_repetition_dist = false;
@@ -829,28 +847,25 @@ namespace hig {
         is_grain_repetition_dist = true;
         // get nvalues from scaling distribution
         int num_repeats;
-        if (scaling_samples.size() > 1) 
-                    num_repeats = scaling_samples.size();    // CHECK ...
-        else
-          num_repeats = num_grains;          // CHECK ...
+        if(scaling_samples.size() > 1) num_repeats = scaling_samples.size();
+        else num_repeats = num_grains;
         construct_repetition_distribution((*s).second.grain_repetitiondist(), 
-                        num_repeats, all_grains_repeats);
+                                          num_repeats, all_grains_repeats);
       } else {
         vector3_t grain_repeats = (*s).second.grain_repetition();
         all_grains_repeats.push_back(grain_repeats);
       } // if-else
 
-      int num_repeat_scaling;
-      if (scaling_samples.size() == all_grains_repeats.size())
-        num_repeat_scaling = scaling_samples.size();
-      else if ((scaling_samples.size() == 1) && (all_grains_repeats.size() > 1))
-        num_repeat_scaling = all_grains_repeats.size();
-      else if ((scaling_samples.size() > 1) && (all_grains_repeats.size() == 1))
-        num_repeat_scaling = scaling_samples.size();
-      else {
+      int num_repeat_scaling,
+          num_scaling = scaling_samples.size() / 3,
+          num_repeats = all_grains_repeats.size();
+      if(num_scaling == num_repeats) num_repeat_scaling = num_scaling;
+      else if(num_scaling == 1) num_repeat_scaling = num_repeats;
+      else if(num_repeats == 1) num_repeat_scaling = num_scaling;
+      else {  // they are both > 1 and unequal
         std::cerr << "error: scaling and repetition distributions are not aligned." << std::endl;
         return false;
-      }
+      } // if-else
 
       // FIXME .. get it from multilayer object
       vector3_t curr_transvec = curr_struct->grain_transvec();
@@ -861,26 +876,26 @@ namespace hig {
                            // ... incomplete
       } // if-else
 
-      /* computing dwba ff for each grain in structure (*s) with
-       * ensemble containing num_grains grains */
+      /** computing dwba ff for each grain in structure (*s) with
+          ensemble containing num_grains grains */
 
       int grain_min = 0;
       int num_gr = num_grains;
-      int grain_max = num_gr;
+      int grain_max = num_grains;
 
       #ifdef USE_MPI
         // divide among processors
         int num_procs = multi_node_.size(struct_comm);
         int rank = multi_node_.rank(struct_comm);
         int grain_color = 0;
-        if(num_procs > num_gr) {
-          grain_color = rank % num_gr;
+        if(num_procs > num_grains) {
+          grain_color = rank % num_grains;
           grain_min = grain_color;
           num_gr = 1;
         } else {
           grain_color = rank;
-          grain_min = ((num_gr / num_procs) * rank + min(rank, num_gr % num_procs));
-          num_gr = (num_gr / num_procs) + (rank < num_gr % num_procs);
+          grain_min = ((num_grains / num_procs) * rank + min(rank, num_grains % num_procs));
+          num_gr = (num_grains / num_procs) + (rank < num_grains % num_procs);
         } // if-else
         grain_max = grain_min + num_gr;
         woo::comm_t grain_comm = "grain";
@@ -895,33 +910,27 @@ namespace hig {
         bool gmaster = true;
       #endif // USE_MPI
 
-      complex_t *grain_ids = NULL;
+      real_t *grain_id = NULL;
       if(gmaster) {    // only the structure master needs this
-        grain_ids = new (std::nothrow) complex_t[num_gr * nrow_ * ncol_];
-        if(grain_ids == NULL) {
+        grain_id = new (std::nothrow) real_t[nrow_ * ncol_];
+        if(grain_id == NULL) {
           std::cerr << "error: could not allocate memory for 'id'" << std::endl;
           return false;
         } // if
         // initialize to 0
-        memset(grain_ids, 0 , num_gr * nrow_ * ncol_ * sizeof(complex_t));
+        memset(grain_id, 0 , nrow_ * ncol_ * sizeof(real_t));
       } // if
 
       // loop over grains - each process processes num_gr grains
-      #ifdef USE_GPU
-        int num_device = 0;
-        cudaGetDeviceCount(&num_device);
-        omp_set_num_threads(num_device);
-        #pragma omp parallel for
-      #endif
       for(int grain_i = grain_min; grain_i < grain_max; grain_i ++) {  // or distributions
 
+        #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
         if(gmaster) {
-          std::cerr << "-- Processing grain " << grain_i + 1 << " / " << num_grains << " ..."
-                << std::endl;
+          std::cout << "-- Processing grain " << grain_i + 1 << " / " << num_grains << " ..."
+                    << std::endl;
         } // if
-        #ifdef USE_GPU
-        cudaSetDevice(omp_get_thread_num());
         #endif
+
         // define r_norm (grain orientation by tau and eta)
         // define full grain rotation matrix r_total = r_phi * r_norm
         // TODO: ... i think these tau eta zeta can be computed on the fly to save memory ...
@@ -929,9 +938,10 @@ namespace hig {
         real_t rot2 = nn[1 * num_grains + grain_i];
         real_t rot3 = nn[2 * num_grains + grain_i];
         real_t gauss_weight = 1.0;
-        if(struct_dist == "gaussian") {
-          gauss_weight = wght[grain_i] * wght[num_grains + grain_i] *
-                  wght[2 * num_grains + grain_i];
+        if(struct_dist == "gaussian" || struct_dist == "cauchy") {
+          gauss_weight = wght[grain_i] *
+                         wght[num_grains + grain_i] *
+                         wght[2 * num_grains + grain_i];
         } // if
         RotMatrix_t r1(r1axis, rot1);
         RotMatrix_t r2(r2axis, rot2);
@@ -942,13 +952,11 @@ namespace hig {
 
         /* center of unit cell replica */
         vector3_t curr_dd_vec(dd[grain_i + 0],
-                    dd[grain_i + num_grains],
-                    dd[grain_i + 2 * num_grains]);
+                              dd[grain_i + num_grains],
+                              dd[grain_i + 2 * num_grains]);
         vector3_t center = rot * curr_dd_vec + curr_transvec;
 
         /* compute structure factor and form factor */
-
-        // TODO: parallel tasks ...
 
         woo::BoostChronoTimer sftimer, fftimer;
         fftimer.start(); fftimer.pause();
@@ -959,16 +967,6 @@ namespace hig {
         if(input_->scattering().experiment() == "gisaxs") sz = nqz_extended_;
         ff.clear();
         ff.resize(sz, CMPLX_ZERO_);
-        /*std::cerr << "** ARRAY CHECK ** (sz=" << sz << ")" << std::endl;
-        if(!check_finite(QGrid::instance().qx(), QGrid::instance().nqx())) {
-          std::cerr << "** ARRAY CHECK ** qx failed check (sz=" << QGrid::instance().nqx() << ")" << std::endl;
-        } // if
-        if(!check_finite(QGrid::instance().qy(), QGrid::instance().nqy())) {
-          std::cerr << "** ARRAY CHECK ** qy failed check (sz=" << QGrid::instance().nqy() << ")" << std::endl;
-        } // if
-        if(!check_finite(QGrid::instance().qz_extended(), QGrid::instance().nqz_extended())) {
-          std::cerr << "** ARRAY CHECK ** qz failed check (sz=" << QGrid::instance().nqz_extended() << ")" << std::endl;
-        } // if*/
 
         // loop over all elements in the unit cell
         for(Unitcell::element_iterator_t e = curr_unitcell.element_begin();
@@ -1019,36 +1017,45 @@ namespace hig {
         } // for e
 
         fftimer.stop();
-#ifndef FF_VERBOSE
-          std::cerr << "**               FF compute time: "
+        #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
+        #ifndef FF_VERBOSE
+          std::cout << "**               FF compute time: "
                     << fftimer.elapsed_msec() << " ms." << std::endl;
-#endif
+        #endif
+        #endif
+        /*if(!check_finite(&ff[0], ff.size())) {
+          std::cerr << "** ARRAY CHECK ** ff failed check" << std::endl;
+        } // if*/
 
         sftimer.start(); sftimer.pause();
-        for (int i_scale = 0; i_scale < num_repeat_scaling; i_scale++) {
+        for(int i_scale = 0; i_scale < num_repeat_scaling; ++ i_scale) {
 
           /* set the scalig for this grain */
           vector3_t grain_scaling;
           real_t scaling_wght = 1.0;
-          if (is_scaling_distribution) {
-            grain_scaling = scaling_samples[i_scale];
+          if(s->second.grain_scaling_is_dist()) {
+            grain_scaling[0] = scaling_samples[i_scale];
+            grain_scaling[1] = scaling_samples[i_scale + num_scaling];
+            grain_scaling[2] = scaling_samples[i_scale + num_scaling * 2];
             scaling_wght = scaling_weights[i_scale];
           } else {
-            grain_scaling = scaling_samples[0];
+            grain_scaling[0] = scaling_samples[0];
+            grain_scaling[1] = scaling_samples[1];
+            grain_scaling[2] = scaling_samples[2];
             scaling_wght = scaling_weights[0];
           } // if-else
 
           /* set the repetition for this grain */
           vector3_t grain_repeats;
-          if (is_grain_repetition_dist)
-            grain_repeats = all_grains_repeats[grain_i % all_grains_repeats.size()];
-          else
-            grain_repeats = all_grains_repeats[0]; // same repeat for all grains
+          if(is_grain_repetition_dist) grain_repeats = all_grains_repeats[grain_i % num_repeats];
+          else grain_repeats = all_grains_repeats[0]; // same repeat for all grains
 
-#ifdef SF_VERBOSE
-          std::cerr << "-- Distribution sample " << i_scale + 1 << " / "
+          #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
+          #ifdef SF_VERBOSE
+          std::cout << "-- Distribution sample " << i_scale + 1 << " / "
               << scaling_samples.size() << ".\n";
- #endif
+           #endif
+           #endif
 
           /* calulate structure factor for the grain */
           real_t weight = gauss_weight * scaling_wght;
@@ -1063,41 +1070,38 @@ namespace hig {
                     , grain_comm
                   #endif
                   )){
-              std::cerr << "Error: aborting run due to previous errors" << std::endl;
+              std::cerr << "error: aborting run due to previous errors" << std::endl;
               std::exit(1);
           }
           sftimer.pause();
 
           /* compute intensities using sf and ff */
-          // TODO: parallelize ...
           if(gmaster) {  // grain master
-            complex_t* base_id = grain_ids + (grain_i - grain_min) * nrow_ * ncol_;
+            //complex_t* base_id = grain_ids + (grain_i - grain_min) * nrow_ * ncol_;
+            real_t* base_id = grain_id;
             unsigned int nslices = input_->compute().nslices();
             unsigned int imsize = nrow_ * ncol_;
             if(nslices <= 1) {
               /* without slicing */
-              //if(single_layer_refindex_.delta() < 0 || single_layer_refindex_.beta() < 0) {
-              //  // this should never happen
-              //  std::cerr << "error: single layer information not correctly set"
-              //            << std::endl;
-              //  return false;
-              //} // if
-              if(input_->scattering().experiment() == "gisaxs") {  // GISAXS
+              if(input_->scattering().experiment() == "gisaxs") { // GISAXS
                 for(unsigned int i = 0; i < imsize; ++ i) {
                   unsigned int curr_index   = i;
                   unsigned int curr_index_0 = i; 
                   unsigned int curr_index_1 = 1 * imsize + i;
                   unsigned int curr_index_2 = 2 * imsize + i;
                   unsigned int curr_index_3 = 3 * imsize + i;
-                  base_id[curr_index] = weight * 
-                                       (fc[curr_index_0] * sf[curr_index_0] * ff[curr_index_0] +
-                                        fc[curr_index_1] * sf[curr_index_1] * ff[curr_index_1] +
-                                        fc[curr_index_2] * sf[curr_index_2] * ff[curr_index_2] +
-                                        fc[curr_index_3] * sf[curr_index_3] * ff[curr_index_3]);
+                  //base_id[curr_index] = weight * 
+                  complex_t temp = weight * 
+                                   (fc[curr_index_0] * sf[curr_index_0] * ff[curr_index_0] +
+                                   fc[curr_index_1] * sf[curr_index_1] * ff[curr_index_1] +
+                                   fc[curr_index_2] * sf[curr_index_2] * ff[curr_index_2] +
+                                   fc[curr_index_3] * sf[curr_index_3] * ff[curr_index_3]);
+                  base_id[curr_index] += temp.real() * temp.real() + temp.imag() * temp.imag();
                 } // for i
-              } else { // SAXS
+              } else {                                            // SAXS
                 for(unsigned int i = 0; i < imsize; ++ i) {
-                  base_id[i] = weight * sf[i] * ff[i];
+                  complex_t temp = weight * sf[i] * ff[i];
+                  base_id[i] = temp.real() * temp.real() + temp.imag() * temp.imag();
                 } // for i
               } // if-else
               if(input_->compute().save_ff()){
@@ -1122,11 +1126,13 @@ namespace hig {
           //sf.clear(); // clean structure factor
         } // for i_scale
         sftimer.stop();
+        #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
         #ifndef SF_VERBOSE
-          std::cerr << "**               SF compute time: "
+          std::cout << "**               SF compute time: "
                     << sftimer.elapsed_msec() << " ms." << std::endl;
         #else
-          std::cerr << sftimer.elapsed_msec() << " ms." << std::endl;
+          std::cout << sftimer.elapsed_msec() << " ms." << std::endl;
+        #endif
         #endif
 
         // clean form factor before going to next
@@ -1134,16 +1140,19 @@ namespace hig {
 
       } // for num_gr
 
-      complex_t* id = NULL;
+      //complex_t* id = NULL;
+      real_t* id = NULL;
       #ifdef USE_MPI
         if(multi_node_.size(struct_comm) > 1) {
           // collect grain_ids from all procs in struct_comm
           if(smaster) {
-            id = new (std::nothrow) complex_t[num_grains * nrow_ * ncol_];
+            //id = new (std::nothrow) complex_t[num_grains * nrow_ * ncol_];
+            id = new (std::nothrow) real_t[multi_node_.size(struct_comm) * nrow_ * ncol_];
           } // if
           int *proc_sizes = new (std::nothrow) int[multi_node_.size(struct_comm)];
           int *proc_displacements = new (std::nothrow) int[multi_node_.size(struct_comm)];
-          multi_node_.gather(struct_comm, &num_gr, 1, proc_sizes, 1);
+          //multi_node_.gather(struct_comm, &num_gr, 1, proc_sizes, 1);
+          for(int i = 0; i < multi_node_.size(struct_comm); ++ i) proc_sizes[i] = 1;
           if(smaster) {
             // make sure you get data only from the gmasters
             for(int i = 0; i < multi_node_.size(struct_comm); ++ i)
@@ -1152,18 +1161,38 @@ namespace hig {
             for(int i = 1; i < multi_node_.size(struct_comm); ++ i)
               proc_displacements[i] = proc_displacements[i - 1] + proc_sizes[i - 1];
           } // if
-          multi_node_.gatherv(struct_comm, grain_ids, gmaster * num_gr * nrow_ * ncol_,
-                    id, proc_sizes, proc_displacements);
+          //multi_node_.gatherv(struct_comm, grain_ids, gmaster * num_gr * nrow_ * ncol_,
+          //                    id, proc_sizes, proc_displacements);
+          multi_node_.gatherv(struct_comm, grain_id, gmaster * nrow_ * ncol_,
+                              id, proc_sizes, proc_displacements);
           delete[] proc_displacements;
           delete[] proc_sizes;
+
+          //if(gmaster) {
+          //  if(grain_ids != NULL) delete[] grain_ids;
+          //  grain_ids = NULL;
+          //} // if
+
+          // reduce data from all procs [ alt. use reduction instead of gatherv above ]
+          if(smaster) {
+            for(int z = 0; z < nrow_ * ncol_; ++ z) {
+              real_t sum = 0.0;
+              for(int p = 0; p < multi_node_.size(struct_comm); ++ p) sum += id[p * nrow_ * ncol_ + z];
+              grain_id[z] = sum;
+            } // for
+            if(id != NULL) delete[] id;
+            id = grain_id;
+          } // if
         } else {
-          id = grain_ids;
+          //id = grain_ids;
+          id = grain_id;
         } // if-else
 
         delete[] gmasters;
         multi_node_.free(grain_comm);
       #else
-        id = grain_ids;
+        //id = grain_ids;
+        id = grain_id;
       #endif
 
       delete[] nn;
@@ -1171,7 +1200,6 @@ namespace hig {
       delete[] wght;
 
       if(smaster) {
-        // FIXME: double check the following correlation stuff ...
         // new stuff for grain/ensemble correlation
         unsigned int soffset = 0;
         switch(input_->compute().param_structcorrelation()) {
@@ -1181,14 +1209,15 @@ namespace hig {
             // intensity = sum_struct(struct_intensity)
             soffset = s_num * nrow_ * ncol_;
             for(unsigned int i = 0; i < nrow_ * ncol_ ; ++ i) {
-              unsigned int curr_index = i;
-              real_t sum = 0.0;
-              for(int d = 0; d < num_grains; ++ d) {
-                unsigned int id_index = d * nrow_ * ncol_ + curr_index;
-                sum += id[id_index].real() * id[id_index].real() + 
-                  id[id_index].imag() * id[id_index].imag();
-              } // for d
-              struct_intensity[soffset + curr_index] = sum;
+              //unsigned int curr_index = i;
+              //real_t sum = 0.0;
+              //for(int d = 0; d < num_grains; ++ d) {
+              //  unsigned int id_index = d * nrow_ * ncol_ + curr_index;
+              //  sum += id[id_index].real() * id[id_index].real() + 
+              //         id[id_index].imag() * id[id_index].imag();
+              //} // for d
+              //struct_intensity[soffset + curr_index] = sum;
+              struct_intensity[soffset + i] = id[i];
             } // for i
             break;
 
@@ -1240,6 +1269,8 @@ namespace hig {
 
     std::vector<real_t> iratios;
     real_t iratios_sum = 0.0;
+    //for(structure_iterator_t s = HiGInput::instance().structure_begin();
+    //    s != HiGInput::instance().structure_end(); ++ s) {
     for(structure_citerator_t s = input_->structures().cbegin(); 
         s != input_->structures().cend(); ++ s) {
       iratios.push_back((*s).second.iratio());
@@ -1288,6 +1319,12 @@ namespace hig {
         } // if-else
         delete[] proc_displacements;
         delete[] proc_sizes;
+        if(master) {
+          if(struct_intensity != NULL) delete[] struct_intensity;
+          if(c_struct_intensity != NULL) delete[] c_struct_intensity;
+          struct_intensity = NULL;
+          c_struct_intensity = NULL;
+        } // if
       } else {
         all_struct_intensity = struct_intensity;
         all_c_struct_intensity = c_struct_intensity;
@@ -1303,17 +1340,13 @@ namespace hig {
     #endif
 
     if(master) {
-      // normalize
-      if(all_struct_intensity != NULL)
-        normalize(all_struct_intensity, nrow_ * ncol_);
-
       img3d = new (std::nothrow) real_t[nrow_ * ncol_];
-      if (img3d == nullptr) {
+      if(img3d == nullptr) {
         std::cerr << "error: unable to allocate memeory." << std::endl;
         std::exit(1);
-      }
-      // sum of all struct_intensity into intensity
+      } // if
 
+      // sum of all struct_intensity into intensity
       // new stuff for correlation
       switch(input_->compute().param_structcorrelation()) {
         case structcorr_null:  // default
@@ -1369,25 +1402,33 @@ namespace hig {
           return false;
       } // switch
 
-      delete[] all_c_struct_intensity;
-      delete[] all_struct_intensity;
+      if(all_struct_intensity != NULL) delete[] all_struct_intensity;
+      if(all_c_struct_intensity != NULL) delete[] all_c_struct_intensity;
+      all_struct_intensity = NULL;
+      all_c_struct_intensity = NULL;
+
     } // if master
 
     if(master) {
       // convolute/smear the computed intensities
+      //real_t sigma = HiGInput::instance().scattering_smearing();
       real_t sigma = input_->scattering().smearing();
-      if(sigma > 0.0) {
+      if(sigma > TINY_) {
         woo::BoostChronoTimer smear_timer;
-        std::cerr << "-- Smearing the result with sigma = " << sigma << " ... " << std::flush;
+        #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
+        std::cout << "-- Smearing the result with sigma = " << sigma << " ... " << std::flush;
+        #endif
         if(img3d == NULL) {
           std::cerr << "error: there is no img3d. you are so in the dumps!" << std::endl;
         } // if
         smear_timer.start();
         gaussian_smearing(img3d, sigma);
         smear_timer.stop();
-        std::cerr << "done." << std::endl;
-        std::cerr << "**                 Smearing time: "
-              << smear_timer.elapsed_msec() << " ms." << std::endl;
+        #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
+        std::cout << "done." << std::endl;
+        std::cout << "**                 Smearing time: "
+                  << smear_timer.elapsed_msec() << " ms." << std::endl;
+        #endif
       } // if
     } // if master
 
@@ -1515,8 +1556,151 @@ namespace hig {
   } // HipGISAXS::layer_qgrid_qz()
 
 
+  // TODO optimize this later ...
+//  bool HipGISAXS::compute_fresnel_coefficients_embedded(real_t alpha_i, complex_t* &fc) {
+//    RefractiveIndex nl = single_layer_refindex_;
+//    RefractiveIndex ns = substrate_refindex_;
+//    real_t lt = single_layer_thickness_;
+//    size_t imsize = nrow_ * ncol_;
+//
+//    complex_t dnl2(2.0 * nl.delta(), 2.0 * nl.beta());
+//    complex_t dns2(2.0 * ns.delta(), 2.0 * ns.beta());
+//
+//    real_t sinai = sin(alpha_i);
+//    real_t kiz0 = -1.0 * k0_ * sinai;
+//    complex_t kiz1 = -1.0 * k0_ * sqrt(sinai * sinai - dnl2);
+//    complex_t kiz2 = -1.0 * k0_ * sqrt(sinai * sinai - dns2);
+//
+//    complex_t r01_kiz1 = (kiz0 - kiz1) / (kiz0 + kiz1);
+//    complex_t r12_kiz1 = (kiz1 - kiz2) / (kiz1 + kiz2);
+//    complex_t t01_kiz1 = 2.0 * (kiz0 / (kiz0 + kiz1));
+//
+//    complex_t a1m_kiz1 = t01_kiz1 /
+//              ((real_t) 1.0 + r01_kiz1 * r12_kiz1 * exp(complex_t(0, 2) * kiz1 * lt));
+//    complex_t a1p_kiz1 = a1m_kiz1 * r12_kiz1 * exp(complex_t(0, 2) * kiz1 * lt);
+//
+//    complex_t *a1mi = NULL, *a1pi = NULL;
+//    a1mi = new (std::nothrow) complex_t[imsize];
+//    a1pi = new (std::nothrow) complex_t[imsize];
+//    if(a1mi == NULL || a1pi == NULL) {
+//      std::cerr << "error: failed to allocate memory for a1mi, a1pi" << std::endl;
+//      return false;
+//    } // if
+//    for(unsigned int i = 0; i < imsize; ++ i) {
+//      a1mi[i] = a1m_kiz1; a1pi[i] = a1p_kiz1;
+//    } // for
+//
+//    complex_t *a1mf = NULL, *a1pf = NULL;
+//    a1mf = new (std::nothrow) complex_t[imsize];
+//    a1pf = new (std::nothrow) complex_t[imsize];
+//    if(a1mf == NULL || a1pf == NULL) {
+//      std::cerr << "error: failed to allocate memory for a1mf, a1pf" << std::endl;
+//      return false;
+//    } // if
+//    for(unsigned int i = 0; i < imsize; ++ i) {
+//      a1mf[i] = a1pf[i] = complex_t(0.0, 0.0);
+//    } // for
+//
+//    // allocate fc memory
+//    fc = new (std::nothrow) complex_t[5 * imsize];  // 5 sets
+//    if(fc == NULL) {
+//      std::cerr << "error: failed to allocate memory for fc" << std::endl;
+//      return false;
+//    } // if
+//
+//
+//    for(unsigned int z = 0; z < nqz_; ++ z) {
+//      complex_t a1m_nkfz1, a1p_nkfz1;
+//      real_t kfz0 = QGrid::instance().qz(z) + kiz0;
+//      unsigned int idx = 4 * imsize + z;
+//
+//      if(kfz0 < 0) {
+//        a1m_nkfz1 = complex_t(0.0, 0.0);
+//        a1p_nkfz1 = complex_t(0.0, 0.0);
+//        fc[idx] = complex_t(0.0, 0.0);
+//      } else {  // kfz0 >= 0
+//        real_t nkfz0 = -1.0 * kfz0;
+//        complex_t nkfz1 = -1.0 * sqrt(kfz0 * kfz0 - k0_ * k0_ * dnl2);
+//        complex_t nkfz2 = -1.0 * sqrt(kfz0 * kfz0 - k0_ * k0_ * dns2);
+//
+//        complex_t r01_nkfz1 = (nkfz0 - nkfz1) / (nkfz0 + nkfz1);
+//        complex_t r12_nkfz1 = (nkfz1 - nkfz2) / (nkfz1 + nkfz2);
+//        complex_t t01_nkfz1 = 2.0 * (nkfz0 / (nkfz0 + nkfz1));
+//
+//        complex_t uniti = complex_t(0, 1);
+//        complex_t temp4 = 2.0 * nkfz1 * lt;
+//        real_t temp3 = exp(-1.0 * temp4.imag());
+//        complex_t temp5 = exp(uniti * temp4.real());
+//                 
+//        complex_t temp6 = temp3 * temp5;
+//        a1m_nkfz1 = t01_nkfz1 /
+//              ((real_t) 1.0 + r01_nkfz1 * r12_nkfz1 * temp6);
+//        a1p_nkfz1 = a1m_nkfz1 * r12_nkfz1 * temp6;
+//
+//        fc[idx] = complex_t(1.0, 0.0);
+//      } // if-else
+//
+//      a1mf[z] = a1m_nkfz1;
+//      a1pf[z] = a1p_nkfz1;
+//    } // for z
+//
+//    // the element-element products
+//    for(unsigned int z = 0; z < nqz_; z ++) {
+//      fc[0 * imsize + z ] = a1mi[z] * a1mf[z];
+//      fc[1 * imsize + z ] = a1pi[z] * a1mf[z];
+//      fc[2 * imsize + z ] = a1mi[z] * a1pf[z];
+//      fc[3 * imsize + z ] = a1pi[z] * a1pf[z];
+//    } // for z
+//
+//    delete[] a1pf;
+//    delete[] a1mf;
+//    delete[] a1pi;
+//    delete[] a1mi;
+//
+//    return true;
+//  } // HipGISAXS::compute_fresnel_coefficients_embedded()
+//
+//
+//  // optimize ...
+//  bool HipGISAXS::compute_fresnel_coefficients_top_buried(real_t alpha_i, complex_t* &fc) {
+//
+//    RefractiveIndex ns = substrate_refindex_;
+//    complex_t ns2 = 2 * complex_t(ns.delta(), ns.beta());
+//
+//    // incoming wave
+//    real_t sin_ai = std::sin(alpha_i);
+//    real_t kzi  = -1 * k0_ * sin_ai;
+//    complex_t tmp = std::sqrt(sin_ai * sin_ai - ns2);
+//    complex_t rki = (sin_ai - tmp)/(sin_ai + tmp);
+//
+//    size_t imsize = nrow_ * ncol_;
+//    fc = new (std::nothrow) complex_t[5 * imsize];
+//    if(fc == NULL) {
+//      std::cerr << "error: failed to allocate memory for fc" << std::endl;
+//      return false;
+//    } // if
+//
+//    for(unsigned int z = 0; z < nqz_; ++ z) {
+//      real_t kzf = QGrid::instance().qz(z) + kzi;
+//      if(kzf < 0) {
+//        fc[z] = fc[imsize + z] = fc[2*imsize + z] = fc[3*imsize + z] = CMPLX_ZERO_;
+//      } else {
+//        real_t sin_af = kzf / k0_;
+//        tmp = std::sqrt(sin_af * sin_af - ns2);
+//        complex_t rkf = (sin_af - tmp)/(sin_af + tmp);
+//        fc[z] = complex_t(1.0, 0);
+//        fc[imsize + z] = rkf;
+//        fc[2 * imsize + z] = rki;
+//        fc[3 * imsize + z] = rki * rkf;
+//      }
+//    } // for z
+//
+//    return true;
+//  } // HipGISAXS::compute_fresnel_coefficients_top_buried()
+
+
   bool HipGISAXS::spatial_distribution(structure_citerator_t s, real_t tz, int dim,
-                    int& rand_dim_x, int& rand_dim_y, real_t* &d) {
+                                       int& rand_dim_x, int& rand_dim_y, real_t* &d) {
     vector3_t spacing = (*s).second.ensemble_spacing();
     vector3_t maxgrains = (*s).second.ensemble_maxgrains();
     std::string distribution = (*s).second.ensemble_distribution();
@@ -1532,7 +1716,7 @@ namespace hig {
         //rand_dim_x = max(1,
         //      (int)std::floor(max_density[0] * max_density[1] * max_density[2] / 4.0));
         // TEMPORARY HACK ... FIXME ...
-        rand_dim_x = maxgrains[0] * maxgrains[1] * maxgrains[2];
+        rand_dim_x = maxgrains[0] * maxgrains[1] * maxgrains[2];    // number of grains
         rand_dim_y = 3;
 
         // construct random matrix
@@ -1674,7 +1858,7 @@ namespace hig {
       } else {
       // read .spa file ...
       std::cerr << "uh-oh: seems like you wanted to read distribution from a file" << std::endl;
-      std::cerr << "FU, this has not been implemented yet" << std::endl;
+      std::cerr << "       this has not been implemented yet" << std::endl;
       return false;
     } // if-else
 
@@ -1683,13 +1867,13 @@ namespace hig {
 
 
   bool HipGISAXS::orientation_distribution(structure_citerator_t s, real_t* dd, int & ndx, int ndy, 
-                        real_t* &nn, real_t* &wght) {
+                                           real_t* &nn, real_t* &wght) {
     std::string distribution = (*s).second.grain_orientation();
     vector3_t rot1 = (*s).second.rotation_rot1();
     vector3_t rot2 = (*s).second.rotation_rot2();
     vector3_t rot3 = (*s).second.rotation_rot3();
 
-    if (distribution == "bragg"){
+    if(distribution == "bragg") {
       real_vec_t angles;
       Lattice * lattice = (Lattice *) s->second.lattice();
       vector3_t gr_scaling = s->second.grain_scaling();
@@ -1701,64 +1885,56 @@ namespace hig {
         for (int i = 0; i < ndx * 3; i++) nn[i] = REAL_ZERO_;
         for (int i = 0; i < ndx; i++) nn[i] = angles[i];
       } else {
-        std::cerr << "Failed to calculate orientations for Bragg condition" << std::endl;
-        std::cerr << "This is a bug, please report it." << std::endl;
+        std::cerr << "error: failed to calculate orientations for Bragg condition" << std::endl;
+        std::cerr << "       this is a bug, please report it." << std::endl;
         return false;
       }
       return true;
     }
     nn = new (std::nothrow) real_t[ndx * ndy];
-    if (nn == NULL) {
+    if(nn == NULL) {
       std::cerr << "error: could not allocate memory" << std::endl;
       return false;
-    }
+    } // if
     wght = new (std::nothrow) real_t[ndx * ndy];
-    if (wght == NULL) {
+    if(wght == NULL) {
       std::cerr << "error: could not allocate memory" << std::endl;
       return false;
-    }
+    } // if
     // TODO i believe constructing nn may not be needed ...
     if(distribution == "single") {    // single
       for(int x = 0; x < ndx; ++ x) {
-        //nn[x] = tau[0] * PI_ / 180;
         nn[x] = rot1[1] * PI_ / 180;
       } // for x
+      if(ndy < 2) return true;
       for(int x = 0; x < ndx; ++ x) {
-        //nn[ndx + x] = eta[0] * PI_ / 180;
         nn[ndx + x] = rot2[1] * PI_ / 180;
       } // for x
+      if(ndy < 3) return true;
       for(int x = 0; x < ndx; ++ x) {
-        //nn[2 * ndx + x] = zeta[0] * PI_ / 180;
         nn[2 * ndx + x] = rot3[1] * PI_ / 180;
       } // for x
+      return true;
     } else if(distribution == "random") {  // random
-      for(int x = 0; x < 3 * ndx; ++ x) {
+      for(int x = 0; x < ndy * ndx; ++ x) {
         nn[x] = (real_t(rand()) / RAND_MAX) * 2 * PI_;
       } // for x
     } else if(distribution == "range") {  // range
-      //real_t dtau = fabs(tau[1] - tau[0]);
-      //real_t deta = fabs(eta[1] - eta[0]);
-      //real_t dzeta = fabs(zeta[1] - zeta[0]);
       real_t drot1 = fabs(rot1[2] - rot1[1]);
       real_t drot2 = fabs(rot2[2] - rot2[1]);
       real_t drot3 = fabs(rot3[2] - rot3[1]);
       for(int x = 0; x < ndx; ++ x) {
-        //nn[x] = (tau[0] + (real_t(rand()) / RAND_MAX) * dtau) * PI_ / 180;
         nn[x] = (rot1[1] + (real_t(rand()) / RAND_MAX) * drot1) * PI_ / 180;
       } // for x
+      if(ndy < 2) return true;
       for(int x = 0; x < ndx; ++ x) {
-        //nn[ndx + x] = (eta[0] + (real_t(rand()) / RAND_MAX) * deta) * PI_ / 180;
         nn[ndx + x] = (rot2[1] + (real_t(rand()) / RAND_MAX) * drot2) * PI_ / 180;
       } // for x
+      if(ndy < 3) return true;
       for(int x = 0; x < ndx; ++ x) {
-        //nn[2 * ndx + x] = (zeta[0] + (real_t(rand()) / RAND_MAX) * dzeta) * PI_ / 180;
         nn[2 * ndx + x] = (rot3[1] + (real_t(rand()) / RAND_MAX) * drot3) * PI_ / 180;
       } // for x
-      /*real_t da = PI_ / (2 * (ndx - 1));
-      for(int x = 0; x < ndx; ++ x) {
-        nn[x] = x * da;
-      } // for x
-      for(int x = 0; x < 2 * ndx; ++ x) nn[ndx + x] = 0;*/
+      return true;
     } else if(distribution == "gaussian" || distribution == "normal") {  // gaussian
       real_t mean1 = (*s).second.rotation_rot1_anglemean();
       real_t sd1 = (*s).second.rotation_rot1_anglesd();
@@ -1766,12 +1942,14 @@ namespace hig {
       real_t sd2 = (*s).second.rotation_rot2_anglesd();
       real_t mean3 = (*s).second.rotation_rot3_anglemean();
       real_t sd3 = (*s).second.rotation_rot3_anglesd();
-      /*woo::MTNormalRandomNumberGenerator rgen1(mean1, sd1);
-      woo::MTNormalRandomNumberGenerator rgen2(mean1, sd2);
-      woo::MTNormalRandomNumberGenerator rgen3(mean1, sd3);
       real_t drot1 = fabs(rot1[2] - rot1[1]);
       real_t drot2 = fabs(rot2[2] - rot2[1]);
       real_t drot3 = fabs(rot3[2] - rot3[1]);
+
+      // sampling
+      /*woo::MTNormalRandomNumberGenerator rgen1(mean1, sd1);
+      woo::MTNormalRandomNumberGenerator rgen2(mean1, sd2);
+      woo::MTNormalRandomNumberGenerator rgen3(mean1, sd3);
       if(drot1 > 1e-20) {
         for(int x = 0; x < ndx; ++ x) {
           real_t temp;
@@ -1810,14 +1988,10 @@ namespace hig {
       } // if*/
 
       // for the gaussian weighting with regular instead of gaussian sampling
-      real_t drot1 = rot1[2] - rot1[1];
-      real_t drot2 = rot2[2] - rot2[1];
-      real_t drot3 = rot3[2] - rot3[1];
-      if(fabs(drot1) > 1e-20) {
+      if(drot1 > TINY_) {
         drot1 /= ndx;
         for(int x = 0; x < ndx; ++ x) {
           real_t temp = rot1[1] + x * drot1;
-          //real_t temp = rot1[1] + (real_t(rand()) / RAND_MAX) * drot1;
           nn[x] = temp * PI_ / 180;
           wght[x] = gaussian(temp, mean1, sd1);
         } // for x
@@ -1825,9 +1999,9 @@ namespace hig {
         for(int x = 0; x < ndx; ++ x) { 
           nn[x] = rot1[1] * PI_ / 180;
           wght[x] = 1;
-        }
-      } // if
-      if(fabs(drot2) > 1e-20) {
+        } // for x
+      } // if-else
+      if(drot2 > TINY_) {
         drot2 /= ndx;
         for(int x = 0; x < ndx; ++ x) {
           real_t temp = rot2[1] + x * drot2;
@@ -1838,9 +2012,9 @@ namespace hig {
         for(int x = 0; x < ndx; ++ x) {
           nn[ndx + x] = rot2[1] * PI_ / 180;
           wght[ndx + x] = 1;
-        }
-      } // if
-      if(fabs(drot3) > 1e-20) {
+        } // for x
+      } // if-else
+      if(drot3 > TINY_) {
         drot3 /= ndx;
         for(int x = 0; x < ndx; ++ x) {
           real_t temp = rot3[1] + x * drot3;
@@ -1851,12 +2025,60 @@ namespace hig {
         for(int x = 0; x < ndx; ++ x) { 
           nn[2 * ndx + x] = rot3[1] * PI_ / 180;
           wght[2 * ndx + x] = 1;
-        }
-      } // if
+        } // for x
+      } // if-else
+    } else if(distribution == "cauchy") {  // cauchy
+      real_t location1 = (*s).second.rotation_rot1_anglelocation();
+      real_t scale1 = (*s).second.rotation_rot1_anglescale();
+      real_t location2 = (*s).second.rotation_rot2_anglelocation();
+      real_t scale2 = (*s).second.rotation_rot2_anglescale();
+      real_t location3 = (*s).second.rotation_rot3_anglelocation();
+      real_t scale3 = (*s).second.rotation_rot3_anglescale();
+      // weighting with regular instead of sampling
+      real_t drot1 = fabs(rot1[2] - rot1[1]) / (ndx - 1);
+      real_t drot2 = fabs(rot2[2] - rot2[1]) / (ndx - 1);
+      real_t drot3 = fabs(rot3[2] - rot3[1]) / (ndx - 1);
+      if(drot1 > TINY_) {
+        for(int x = 0; x < ndx; ++ x) {
+          real_t temp = rot1[1] + x * drot1;
+          nn[x] = temp * PI_ / 180;
+          wght[x] = cauchy(temp, location1, scale1);
+        } // for x
+      } else {
+        for(int x = 0; x < ndx; ++ x) { 
+          nn[x] = rot1[1] * PI_ / 180;
+          wght[x] = 1;
+        } // for x
+      } // if-else
+      if(drot2 > TINY_) {
+        for(int x = 0; x < ndx; ++ x) {
+          real_t temp = rot2[1] + x * drot2;
+          nn[ndx + x] =  temp * PI_ / 180;
+          wght[ndx + x] = cauchy(temp, location2, scale2);
+        } // for x
+      } else {
+        for(int x = 0; x < ndx; ++ x) {
+          nn[ndx + x] = rot2[1] * PI_ / 180;
+          wght[ndx + x] = 1;
+        } // for x
+      } // if-else
+      if(drot3 > TINY_) {
+        for(int x = 0; x < ndx; ++ x) {
+          real_t temp = rot3[1] + x * drot3;
+          nn[2 * ndx + x] = temp * PI_ / 180;
+          wght[2 * ndx + x] = cauchy(temp, location3, scale3);
+        } // for x
+      } else {
+        for(int x = 0; x < ndx; ++ x) { 
+          nn[2 * ndx + x] = rot3[1] * PI_ / 180;
+          wght[2 * ndx + x] = 1;
+        } // for x
+      } // if-else
+      return true;
     } else {
       // TODO read .ori file ...
       std::cerr << "uh-oh: I guess you wanted to read orientations from a file" << std::endl;
-      std::cerr << "too bad, its not implemented yet" << std::endl;
+      std::cerr << "       too bad, its not implemented yet" << std::endl;
       return false;
     } // if-else
 
@@ -1953,47 +2175,70 @@ namespace hig {
     return true;
   } // HipGISAXS::construct_repetition_distribution()
 
+
   bool HipGISAXS::construct_scaling_distribution(std::vector<StatisticType> dist,
-                          vector3_t mean, vector3_t stddev,
-                          std::vector<int> nvals,
-                          std::vector<vector3_t> &samples,
-                           std::vector<real_t> &weights) {
-        woo::MTRandomNumberGenerator rng;
-    real_t width = 4;
-    for (int i = 0; i < 3; ++ i) {
-      if (dist[i] != stat_gaussian) {
-        std::cerr << "error: only Gaussian distribution for scaling is implemented."
-            << std::endl;
-        return false;
-      } // if
-    } // for
-    vector3_t temp;
-    vector3_t min, dx;
-    for (int i = 0; i < 3; ++ i) {
-      min[i] = mean[i] - width * stddev[i];
-      dx[i] = (2 * width) * stddev[i] / (nvals[i] + 1);
+                                                 vector3_t mean, vector3_t stddev,
+                                                 std::vector<int> nvals,
+                                                 std::vector<real_t> &samples,
+                                                 std::vector<real_t> &weights) {
+    woo::MTRandomNumberGenerator rng;
+    real_t width = 4;                         // FIXME: this is just temporary
+    real_t temp, min, dx;
+    int max_nvals = std::max(nvals[0], std::max(nvals[1], nvals[2]));
+
+    for(int i = 0; i < 3; ++ i) {
+
+      switch(dist[i]) {
+
+        case stat_none:
+          samples.push_back(mean[i]);
+          weights.push_back(1.0);
+          break;
+
+        case stat_gaussian:
+          min = mean[i] - width * stddev[i];
+          dx = (2 * width) * stddev[i] / (max_nvals + 1);
+          for(int j = 0; j < max_nvals; ++ j) {
+            temp = min + j * dx + rng.rand() * dx;
+            samples.push_back(temp);
+            weights.push_back(gaussian(temp, mean[i], stddev[i]));
+          } // for
+          break;
+
+        case stat_cauchy:
+          min = mean[i] - width * stddev[i];
+          dx = (2 * width) * stddev[i] / (max_nvals + 1);
+          for(int j = 0; j < max_nvals; ++ j) {
+            temp = min + j * dx + rng.rand() * dx;
+            samples.push_back(temp);
+            weights.push_back(cauchy(temp, mean[i], stddev[i]));
+          } // for
+          break;
+
+        default:
+          std::cerr << "error: unsupported distribution for scaling specified" << std::endl;
+          return false;
+
+      } // switch
     } // for
 
-    int nsamples = std::max(nvals[0], std::max(nvals[1], nvals[2]));
-    for (int i = 0; i < nsamples; ++ i) {
-      temp[0] = min[0] + i * dx[0] + rng.rand() * dx[0];
-      temp[1] = min[1] + i * dx[1] + rng.rand() * dx[1];
-      temp[2] = min[2] + i * dx[2] + rng.rand() * dx[2];
-      samples.push_back(temp);
-      weights.push_back(gaussian3d(temp, mean, stddev));
-    } // for
     return true;
   } // HipGISAXS::construct_scaling_distribution()
+
 
   /**
    * fitting related functions
    */
 
   bool HipGISAXS::update_params(const map_t& params) {
-    std::cerr << "Updating HipGISAXS parameters: ";
+    #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
+    std::cout << "** Updating HipGISAXS parameters: ";
     for(map_t::const_iterator i = params.begin(); i != params.end(); ++ i)
-      std::cerr << (*i).first << " = " << (*i).second << "; ";
-    std::cerr << std::endl;
+      std::cout << (*i).first << " = " << (*i).second << "\t";
+    std::cout << std::endl;
+    //HiGInput::instance().print_all();
+    #endif
+    //return HiGInput::instance().update_params(params);
     return input_->update_params(params);
   } // HipGISAXS::update_params()
 

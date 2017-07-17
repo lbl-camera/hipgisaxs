@@ -5,11 +5,6 @@
  *  Created: Jun 11, 2012
  *
  *  Author: Dinesh Kumar <dkumar@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -234,6 +229,8 @@ namespace hig {
     public:
     
       YAMLInput();
+      ~YAMLInput() { }
+
       bool construct_input_config(const char *);
       bool update_params(map_t & params) { return false; }
       const std::string& path() const { return compute_.pathprefix(); }

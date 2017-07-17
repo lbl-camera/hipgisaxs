@@ -333,8 +333,8 @@ def do_configure(myenv):
     if using_gcc():
         add_to_ccflags_if_supported(myenv, '-fopenmp')
     if using_intel():
-        add_to_ccflags_if_supported(myenv, '-openmp')
-        add_to_linkflags_if_supported(myenv, '-openmp')
+        add_to_ccflags_if_supported(myenv, '-qopenmp')
+        add_to_linkflags_if_supported(myenv, '-qopenmp')
 
     return myenv
 
@@ -444,6 +444,9 @@ if using_tau:
   CXXCOMPILER = "tau_cxx.sh"
   CCCOMPILER = "tau_cc.sh"
 
+if 'CXX' in os.environ: CXXCOMPILER = os.environ['CXX']
+if 'CC' in os.environ: CCCOMPILER = os.environ['CC']
+
 # initialize the environment with gathered stuff so far
 env = Environment(BUILD_DIR=variant_dir,
                     ENV = os.environ,
@@ -498,13 +501,13 @@ nix_lib_prefix = "lib"
 if processor == "x86_64":
     linux64 = True
     nix_lib_prefix = "lib64"
-    env.Append(LIBPATH = ["/usr/lib64",
-                            "/usr/lib",
-                            "/lib64",
-                            "/lib",
-                            "/usr/local/lib64",
-                            "/usr/local/lib"])
-    env.Append(CPPPATH = [ '/usr/include/x86_64-linux-gnu/c++/4.8' ])
+#    env.Append(LIBPATH = ["/usr/lib64",
+#                            "/usr/lib",
+#                            "/lib64",
+#                            "/lib",
+#                            "/usr/local/lib64",
+#                            "/usr/local/lib"])
+    #env.Append(CPPPATH = [ '/usr/include/x86_64-linux-gnu/c++/4.8' ])
 env['NIX_LIB_DIR'] = nix_lib_prefix
 
 #add_ld_library_path(env, os.environ['LD_LIBRARY_PATH'])
@@ -574,7 +577,9 @@ if not get_option('clean'):
     parallel_hdf5_flags = ['USE_PARALLEL_HDF5']
     papi_flags = ['PROFILE_PAPI']
 
-    all_flags = detail_flags
+    ioflags = ['FILEIO']
+
+    all_flags = detail_flags + ioflags
     all_libs = boost_libs + tiff_libs + mkl_libs + other_libs
 
     if using_cuda:
@@ -611,7 +616,7 @@ if not get_option('clean'):
         print("Enabling use of accelerator: %s" % using_accelerator)
 
     if not using_mic:
-      env.Append(CCFLAGS = ["-mavx", "-mtune=core-avx2"]) #, "-msse4.1", "-msse4.2", "-mssse3"])
+      env.Append(CCFLAGS = ["-march=core-avx2"]) #, "-msse4.1", "-msse4.2", "-mssse3"])
       #env.Append(CCFLAGS = ["-no-vec"])
 
     if using_debug:
@@ -632,9 +637,11 @@ if not get_option('clean'):
         env.Append(CPPDEFINES = ['DOUBLEP'])
 
     # yaml
-    yaml_headers = ['yaml-cpp/yaml.h']
-    yaml_libs = ['yaml-cpp']
-    env.Append(LIBS = yaml_libs)
+    if using_yaml:
+      yaml_headers = ['yaml-cpp/yaml.h']
+      yaml_libs = ['yaml-cpp']
+      env.Append(LIBS = yaml_libs)
+      env.Append(CPPDEFINES = ['YAML'])
 
     ## print stuff
     #for item in sorted(env.Dictionary().items()):

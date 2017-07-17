@@ -5,11 +5,6 @@
  *  Created: Aug 25, 2013
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -57,6 +52,7 @@ namespace hig {
 
   }; // class EDFReader
 
+
   class EDFWriter {
     public:
       EDFWriter(const char * name) :filename_(name), pixel_(172.E-06) {}
@@ -74,10 +70,11 @@ namespace hig {
       real_t energy_;
       real_t pixel_;
       real_t sdd_;
-
+    
       EDFWriter(){} // forbid default constructor
 
   }; // EDFWriter
+
 } // namespace hig
 
 #endif // __EDF_READER_HPP__

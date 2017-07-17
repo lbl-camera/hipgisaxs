@@ -3,7 +3,6 @@
  *
  *  File: hipgisaxs_fit_bruteforce.cpp
  *  Created: Feb 07, 2014
- *  Modified: Wed 08 Oct 2014 12:17:42 PM PDT
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
  */
@@ -13,7 +12,7 @@
 
 namespace hig {
 
-  BruteForceOptimization::BruteForceOptimization(int narg, char** args, ObjectiveFunction* obj) {
+  BruteForceOptimization::BruteForceOptimization(int narg, char** args, ObjectiveFunction* obj, unsigned int algo_num) {
     name_ = algo_bruteforce;
     obj_func_ = obj;
     num_params_ = (*obj_func_).num_fit_params();
@@ -29,10 +28,10 @@ namespace hig {
     } // for
 
     tol_ = 0;        // not used
-    max_iter_ = 0;      // not used
-    max_hist_ = 0;    // not used
+    max_iter_ = 0;   // not used
+    max_hist_ = 0;   // not used
 
-    x0_ = x_min_;      // initial vector is min of all
+    x0_ = x_min_;    // initial vector is min of all
     xn_.clear();
     error_list_.clear();
   } // BruteForceOptimization::BruteForceOptimization()
@@ -42,7 +41,7 @@ namespace hig {
   } // BruteForceOptimization::~BruteForceOptimization()
 
 
-  bool BruteForceOptimization::run(int narg, char** args, int img_num) {
+  bool BruteForceOptimization::run(int narg, char** args, int algo_num, int img_num) {
     std::cout << "Running Brute Force Optimization ..." << std::endl;
 
     (*obj_func_).set_reference_data(img_num);

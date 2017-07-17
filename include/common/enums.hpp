@@ -3,14 +3,8 @@
  *
  *  File: enums.hpp
  *  Created: Jun 11, 2012
- *  Modified: Wed 08 Oct 2014 12:13:01 PM PDT
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -30,9 +24,9 @@ namespace hig {
   enum ShapeName {
     shape_null,
     shape_error,
-    shape_cube,        /* cube ... same as box with 1 parameter for fitting */
-    shape_box,         /* box */
-    shape_cylinder,    /* cylinder */
+    shape_box,        /* box */
+    shape_cube,       /* same as box */
+    shape_cylinder,      /* cylinder */
     shape_sphere,      /* sphere */
     shape_truncpyr,    /* truncated pyramid */
     shape_trunccone,   /* truncated cone */
@@ -80,10 +74,12 @@ namespace hig {
   enum StatisticType {
     stat_null,
     stat_error,
-    stat_gaussian,      /* gaussian distribution */
     stat_none,        /* default */
+    stat_cauchy,      /* cauchy/lorentzian distribution */
+    stat_gaussian,    /* gaussian distribution */
     stat_random,      /* random distribution */
-    stat_range,        /* range of values (basically same as stat_random) */
+    stat_range,       /* range of values (basically same as stat_random) */
+    stat_t,           /* t distribution */
     stat_uniform      /* uniform distribution */
   }; // enum StatisticType
 
@@ -112,32 +108,71 @@ namespace hig {
     structcorr_GE,      /* both correlated */
   }; // enum StructCorrelationType
 
+
+  /**
+   * fitting related enums
+   */
+
+  /**
+   * fitting algorithms
+   */
   enum FittingAlgorithmName {
-    algo_error,        /* error type */
-    algo_null,        /* default, no algorithm */
+    algo_error,         /* error type */
+    algo_null,          /* default, no algorithm */
     algo_pounders,      /* pounders algorithm (from tao) */
-    algo_pso,        /* particle swarm optimization algorithm */
-        algo_lmvm,
-    algo_bruteforce      /* brute force optimization */
+    algo_pso,           /* particle swarm optimization algorithm */
+    algo_lmvm,          /* lmvm algorithm (from tao) */
+    algo_bruteforce,    /* brute force optimization */
+    algo_none_pounders, /* dont fit, evaluate objective */
+    algo_none_lmvm,     /* dont fit, evaluate objective */
+    algo_none_pso       /* dont fit, evaluate objective */
   }; // enum FittingAlgorithmName
 
+
+  /**
+   * parameters for various fitting algorithms
+   */
   enum FitAlgorithmParamType {
-    algo_param_error,      /* error type */
-    algo_param_null,      /* default, null parameter */
+    algo_param_error,           /* error type */
+    algo_param_null,            /* default, null parameter */
     algo_pounders_param_delta,  /* delta for pounders algorithm */
-    algo_pso_param_omega,    /* omega for pso algorithm */
-    algo_pso_param_phi1,    /* phi1 for pso algorithm */
-    algo_pso_param_phi2,    /* phi2 for pso algorithm */
-    algo_pso_param_nparticle,  /* number of particles for pso algorithm */
-    algo_pso_param_ngen      /* number of generations for pso algorithm */
+    algo_pso_param_omega,       /* omega for pso algorithm */
+    algo_pso_param_phi1,        /* phi1 for pso algorithm */
+    algo_pso_param_phi2,        /* phi2 for pso algorithm */
+    algo_pso_param_nparticle,   /* number of particles for pso algorithm */
+    algo_pso_param_ngen,        /* number of generations for pso algorithm */
+    algo_pso_param_tune_omega,  /* flag to enable tuning pso omega parameter */
+    algo_pso_param_type         /* type of the pso algorithm flavor */
   }; // enum FitAlgorithmParamType
 
+
+  /**
+   * file type of the reference data in fitting
+   */
   enum ReferenceFileType {
     reference_file_null,    /* default, null type */
     reference_file_error,    /* error type */
     reference_file_ascii,    /* plain text file */
     reference_file_edf      /* EDF file format */
   }; // ReferenceFileType
+
+
+  /**
+   * distance metrics for fitting reference data comparison
+   */
+  enum FittingDistanceMetric {
+    metric_error,                         /* error type */
+    metric_null,                          /* default null type */
+    metric_sqrt_unit_norm_l1,             /* sqrt of intensities, unit normalized, l1 distance */
+    metric_sqrt_unit_norm_l2,             /* sqrt of intensities, unit normalized, l2 distance */
+    metric_sqrt_c_norm_l2,                /* sqrt of intensities, c normalized, l2 distance */
+    metric_cbrt_unit_norm_l1,             /* cbrt of intensities, unit normalized, l1 distance */
+    metric_cbrt_unit_norm_l2,             /* cbrt of intensities, unit normalized, l2 distance */
+    metric_cbrt_c_norm_l2,                /* cbrt of intensities, c normalized, l2 distance */
+    metric_sqrt_unit_norm_l1_residual,    /* sqrt of intensities, unit norm, l2 dist, residual */
+    metric_sqrt_unit_norm_l2_residual,    /* sqrt of intensities, unit norm, l1 dist, residual */
+    metric_sqrt_c_norm_l2_residual        /* sqrt of intensities, c norm, l2 dist, residual */
+  }; // enum FittingDistanceMetricType
 
 } // namespace hig
 

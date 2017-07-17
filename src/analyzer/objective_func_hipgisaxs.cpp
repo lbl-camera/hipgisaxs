@@ -3,13 +3,13 @@
  *
  *  File: objective_func.cpp
  *  Created: Feb 02, 2014
- *  Modified: Wed 08 Oct 2014 12:17:42 PM PDT
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
  */
 
 #include <iostream>
 #include <map>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 #include <analyzer/objective_func_hipgisaxs.hpp>
 #include <file/edf_reader.hpp>
@@ -28,14 +28,18 @@ namespace hig {
       exit(1);
     } // if
 
-    n_par_ = hipgisaxs_.nrow();
-    n_ver_ = hipgisaxs_.ncol();
+    n_par_ = hipgisaxs_.ncol();
+    n_ver_ = hipgisaxs_.nrow();
 
     ref_data_ = NULL;
+    mean_data_ = NULL;
     mask_data_.clear();
     mask_set_ = false;
     pdist_ = d;
-    //curr_dist_.clear();
+
+    reg_alpha_ = 0.0;
+
+    set_mean_data();
 
   } // HipGISAXSObjectiveFunction::HipGISAXSObjectiveFunction()
 
@@ -56,16 +60,21 @@ namespace hig {
     n_ver_ = hipgisaxs_.nrow();
 
     ref_data_ = NULL;
+    mean_data_ = NULL;
     mask_data_.clear();
     mask_set_ = false;
     pdist_ = NULL;
-    //curr_dist_.clear();
+
+    reg_alpha_ = 0.0;
+
+    set_mean_data();
 
   } // HipGISAXSObjectiveFunction::HipGISAXSObjectiveFunction()
 
 
   HipGISAXSObjectiveFunction::~HipGISAXSObjectiveFunction() {
     if(ref_data_ != NULL) delete ref_data_;
+    if(mean_data_ != NULL) delete[] mean_data_;
   } // HipGISAXSObjectiveFunction::~HipGISAXSObjectiveFunction()
 
 
@@ -76,6 +85,7 @@ namespace hig {
 
 
   ReferenceFileType get_reference_file_type(const std::string& fname) {
+    //std::cout << "input file = " << fname << std::endl;
     size_t len = fname.size();
     char temp_ext[16];
     int extlen = 0;
@@ -89,7 +99,6 @@ namespace hig {
     temp_ext[extlen] = '\0';
     std::string temp_ext2(temp_ext);
     std::string ext(temp_ext2.rbegin(), temp_ext2.rend());
-    std::cout << "EXTENSION = " << ext << std::endl;
     if(ext.compare(std::string("edf")) == 0) return reference_file_edf;
     if(ext.compare(std::string("EDF")) == 0) return reference_file_edf;
     if(ext.compare(std::string("txt")) == 0) return reference_file_ascii;
@@ -141,6 +150,9 @@ namespace hig {
         n_ver_ = ref_data_->n_ver();
         hipgisaxs_.override_qregion(n_par_, n_ver_, i);
       } // if
+
+      std::string mask_filename = hipgisaxs_.reference_data_mask(i);
+      ref_type = get_reference_file_type(mask_filename);
       if(ref_type == reference_file_edf) {
         if(!read_edf_mask_data(hipgisaxs_.reference_data_mask(i))) return false;
       } else {
@@ -167,6 +179,7 @@ namespace hig {
       mask_data_.resize(n_par_ * n_ver_, 1);
       return true;
     } // if
+    //std::cout << "+++++++++++++ reading mask: " << filename << std::endl;
     std::ifstream maskf(filename);
     if(!maskf.is_open()) {
       std::cerr << "error: could not open mask data file " << filename << std::endl;
@@ -190,8 +203,7 @@ namespace hig {
       mask_data_.resize(n_par_ * n_ver_, 1);
       return true;
     } // if
-    //EDFReader edfreader(filename.c_str());
-    std::cout << "***** READING MASK EDF FILE " << filename << std::endl;
+    //std::cout << "-- Reading mask data from " << filename << "..." << std::endl;
     EDFReader* edfreader = new EDFReader(filename.c_str());
     real_t* temp_data = NULL;
     unsigned int temp_n_par = 0, temp_n_ver = 0;
@@ -207,55 +219,111 @@ namespace hig {
   } // HipGISAXSObjectiveFunction::read_edf_mask_data()
 
 
+  // computes and sets the simulated data with mean parameter vector values
+  bool HipGISAXSObjectiveFunction::set_mean_data(void) {
+    mean_data_ = NULL;
+
+    // construct mean param_vals
+    std::vector <std::string> params = hipgisaxs_.fit_param_keys();
+    std::map <std::string, real_t> param_vals;
+    for(int i = 0; i < params.size(); ++ i) {
+      param_vals[params[i]] = hipgisaxs_.param_space_mean(params[i]);
+    } // for
+
+    std::cout << "-- Mean/estimated parameter values: ";
+    for(std::map<std::string, real_t>::iterator i = param_vals.begin(); i != param_vals.end(); ++ i)
+      std::cout << (*i).first << ": " << (*i).second << "  ";
+    std::cout << std::endl;
+
+    hipgisaxs_.update_params(param_vals);
+    hipgisaxs_.compute_gisaxs(mean_data_);
+
+    return true;
+  } // HipGISAXSObjectiveFunction::set_mean_data()
+
+
   real_vec_t HipGISAXSObjectiveFunction::operator()(const real_vec_t& x) {
+
+    //bool use_mean = true;    // temporary
+    bool use_mean = false;    // temporary
+
     real_t *gisaxs_data = NULL;
     // construct param_vals
     std::vector <std::string> params = hipgisaxs_.fit_param_keys();
-    // TODO check if param values are within range ...
     std::map <std::string, real_t> param_vals;
     for(int i = 0; i < x.size(); ++ i) param_vals[params[i]] = x[i];
 
+    std::cout << "-- Parameter values input to objective function: ";
     for(std::map<std::string, real_t>::iterator i = param_vals.begin(); i != param_vals.end(); ++ i)
       std::cout << (*i).first << ": " << (*i).second << "  ";
     std::cout << std::endl;
 
     real_vec_t curr_dist;
 
-    // update and compute gisaxs
+    /**
+     * update and compute gisaxs
+     */
     hipgisaxs_.update_params(param_vals);
     hipgisaxs_.compute_gisaxs(gisaxs_data);
+
     // only the master process does the following
     if(hipgisaxs_.is_master()) {
       if(gisaxs_data == NULL) {
         std::cerr << "error: something went wrong in compute_gisaxs. gisaxs_data == NULL."
-              << std::endl;
+                  << std::endl;
         exit(-1);
       } // if
 
-#ifdef MEMDEBUG
-      if(!hipgisaxs_.check_finite((*ref_data_).data(), n_par_ * n_ver_))
-        std::cerr << "** ARRAY CHECK ** ref_data_ failed check" << std::endl;
-      if(!hipgisaxs_.check_finite(gisaxs_data, n_par_ * n_ver_))
-        std::cerr << "** ARRAY CHECK ** gisaxs_data failed check" << std::endl;
-#endif // MEMDEBUG
+      #ifdef MEMDEBUG
+        std::cerr << "** MEMDEBUG enabled" << std::endl;
+        if(!hipgisaxs_.check_finite((*ref_data_).data(), n_par_ * n_ver_))
+          std::cerr << "** ARRAY CHECK ** ref_data_ failed check" << std::endl;
+        if(!hipgisaxs_.check_finite(gisaxs_data, n_par_ * n_ver_))
+          std::cerr << "** ARRAY CHECK ** gisaxs_data failed check" << std::endl;
+      #endif // MEMDEBUG
 
-      // compute error/distance
-      std::cout << "+++++ computing distance ..." << std::endl;
+      /**
+       * compute error/distance
+       */
+      std::cout << "-- Computing distance..." << std::endl;
       real_t* ref_data = (*ref_data_).data();
-      if(ref_data == NULL) std::cerr << "woops: ref_data is NULL" << std::endl;
+      if(ref_data == NULL) std::cerr << "error: ref_data is NULL" << std::endl;
       unsigned int* mask_data = &(mask_data_[0]);
-//      unsigned int* mask_data = new (std::nothrow) unsigned int[n_par_ * n_ver_];
-//      memset(mask_data, 0, n_par_ * n_ver_ * sizeof(unsigned int));
-      std::cout << "============== " << n_par_ << " x " << n_ver_ << std::endl;
-      (*pdist_)(gisaxs_data, ref_data, mask_data, n_par_ * n_ver_, curr_dist);
-//      delete[] mask_data;
+
+      // distance function
+      if(use_mean) (*pdist_)(ref_data, gisaxs_data, mask_data, n_par_ * n_ver_, curr_dist, mean_data_);
+      else (*pdist_)(ref_data, gisaxs_data, mask_data, n_par_ * n_ver_, curr_dist);
+
+      /** regularization **/
+      // compute regularization = (alpha / 2) * || x - x_mean || ^ 2
+      double pmean = 0.0;
+      for(std::map<std::string, real_t>::const_iterator i = param_vals.begin();
+          i != param_vals.end(); ++ i) {
+        double x_mean = hipgisaxs_.param_space_mean((*i).first);
+        double ptemp = ((*i).second - x_mean);
+        ptemp *= ptemp;
+        pmean += ptemp;
+      } // for
+      // for better alpha selection, plot pmean vs. curr_dist
+      real_t reg = (reg_alpha_ / 2) * pmean;
+      std::cout << "## reg_const: " << reg_alpha_ << ", param_norm: " << pmean
+                << ", reg_value: " << reg << ", dist[0]: " << curr_dist[0] << std::endl;
+      real_t reg_dist = reg / curr_dist.size();   // distribute it across the distance vector
+      for(auto i = 0; i < curr_dist.size(); ++ i) {
+        if((boost::math::isfinite)(curr_dist[i])) curr_dist[i] += reg_dist;
+        else curr_dist[i] = 1e8;    // some large number
+      } // for
 
       // write to output file
-      std::string prefix(HiGInput::instance().param_pathprefix() + "/"
-                + HiGInput::instance().runname());
-      std::ofstream out(prefix + "/convergance.dat", std::ios::app);
-      for(real_vec_t::const_iterator i = curr_dist.begin(); i != curr_dist.end(); ++ i)
-        out << (*i) << " ";
+      // do something better ...
+      // as here all procs for different particles will have same ranks within their hipgisaxs object
+      int myrank = hipgisaxs_.rank();
+      std::stringstream cfilename;
+      cfilename << "distance." << myrank << ".dat";
+      std::string prefix(hipgisaxs_.path() + "/" + hipgisaxs_.runname());
+      std::ofstream out(prefix + "/" + cfilename.str(), std::ios::app);
+      out.precision(10);
+      for(real_vec_t::const_iterator i = curr_dist.begin(); i != curr_dist.end(); ++ i) out << *i << " ";
       out << std::endl;
       out.close();
     } // if
@@ -273,8 +341,9 @@ namespace hig {
       std::map <std::string, real_t> param_vals;
       for(int i = 0; i < x.size(); ++ i) param_vals[params[i]] = x[i];
 
+      std::cout << "-- Reference parameter values: ";
       for(std::map<std::string, real_t>::iterator i = param_vals.begin(); i != param_vals.end(); ++ i)
-        std::cout << (*i).first << ": " << (*i).second << "  ";
+        std::cout << (*i).first << " = " << (*i).second << "\t";
       std::cout << std::endl;
 
       // update and compute gisaxs
@@ -299,7 +368,7 @@ namespace hig {
     #endif // USE_MPI
     if(ref_data_ == NULL) ref_data_ = new ImageData(n_par_, n_ver_);
     (*ref_data_).set_data(gisaxs_data);
-    std::cout << "++ Reference data set after simulation" << std::endl;
+    std::cout << "** Reference data set after simulation" << std::endl;
 
     return true;
   } // ObjectiveFunction::operator()()

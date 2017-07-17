@@ -5,11 +5,6 @@
  *  Created: Jun 05, 2012
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -19,8 +14,8 @@
  *  NON-COMMERCIAL END USER LICENSE AGREEMENT.
  */
 
-#ifndef _TOKENS_HPP_
-#define _TOKENS_HPP_
+#ifndef __TOKENS_HPP__
+#define __TOKENS_HPP__
 
 namespace hig {
 
@@ -80,7 +75,7 @@ namespace hig {
     rot_token,                  /* rotation value for various  */
     type_token,                 /* various types */
     stat_token,                 /* statistic type: gaussian, uniform, random, etc. */
-    nsamples_token,              /* number of samples drawn from distribution */
+    nsamples_token,             /* number of samples drawn from distribution */
     mean_token,                 /* mean value */
     stddev_token,               /* standard deviation #26 */
 
@@ -148,7 +143,9 @@ namespace hig {
     struct_ensemble_orient_rot_axis_token,
     struct_ensemble_orient_rot_angles_token,
     struct_ensemble_orient_rot_anglemean_token,
-    struct_ensemble_orient_rot_anglesd_token, //#80
+    struct_ensemble_orient_rot_anglesd_token,
+    struct_ensemble_orient_rot_anglelocation_token,
+    struct_ensemble_orient_rot_anglescale_token,
     struct_paracrystal,
     struct_percusyevick,
     struct_dims,
@@ -209,10 +206,12 @@ namespace hig {
     fit_reference_data_npoints_parallel_token,
     fit_reference_data_npoints_perpendicular_token,
     fit_algorithm_token,
+    fit_algorithm_distance_metric_token,
     fit_algorithm_name_token,
     fit_algorithm_order_token,
     fit_algorithm_param_token,
     fit_algorithm_param_value_token,
+    fit_algorithm_regularization_token,
     fit_algorithm_restart_token,
     fit_algorithm_tolerance_token
   }; // enum TokenType
@@ -234,4 +233,4 @@ namespace hig {
 
 } // namespace hig
 
-#endif /* _TOKENS_HPP_ */
+#endif /* __TOKENS_HPP__ */

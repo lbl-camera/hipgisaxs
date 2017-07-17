@@ -5,11 +5,6 @@
  *  Created: Jun 11, 2012
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -29,13 +24,16 @@
 #include <common/globals.hpp>
 #include <config/input.hpp>
 #include <config/hig_input.hpp>
-#include <config/yaml_input.hpp>
 #include <model/common.hpp>
 #include <model/layer.hpp>
 #include <model/qgrid.hpp>
 #include <ff/ff.hpp>
 #include <sf/sf.hpp>
 #include <image/image.hpp>
+
+#ifdef YAML
+  #include <config/yaml_input.hpp>
+#endif
 
 namespace hig {
 
@@ -141,11 +139,8 @@ namespace hig {
       bool orientation_distribution(structure_citerator_t, real_t*, int &, int, real_t*&, real_t *&);
       bool generate_repetition_range(unsigned int, unsigned int, int, std::vector<unsigned int>&);
       bool construct_repetition_distribution(const GrainRepetitions&, int, std::vector<vector3_t>&);
-      bool construct_scaling_distribution(std::vector<StatisticType>, 
-                    vector3_t, vector3_t,
-                    std::vector<int>,
-                    std::vector<vector3_t>&,
-                    std::vector<real_t>&); 
+      bool construct_scaling_distribution(std::vector<StatisticType>, vector3_t, vector3_t,
+                                          std::vector<int>, std::vector<real_t>&, std::vector<real_t>&); 
 
       /* some functions just for testing and debugging */
       bool write_qgrid(char* filename);
@@ -153,24 +148,28 @@ namespace hig {
       void printfc(const char*, complex_t*, unsigned int);
       void printfr(const char*, real_t*, unsigned int);
 
-      real_t gaussian (real_t x, real_t mean, real_t sigma) {
-        return (1/(sigma*SQRT_2PI_)*std::exp(-(x-mean)*(x-mean)/(2*sigma*sigma)));
-      }
+      real_t gaussian(real_t x, real_t mean, real_t sigma) {
+        if(sigma < TINY_) {   // to make sure no nans occur ... some better way?
+          return (x - mean < TINY_) ? 1.0 : 0.0;
+        } // if
+        return (1.0 / (sigma * SQRT_2PI_) * std::exp(-(x - mean) * (x - mean) / (2 * sigma * sigma)));
+      } // gaussian()
 
-            real_t gaussian3d (vector3_t x, vector3_t mean, vector3_t sigma) {
-                vector3_t t1 = (x-mean)*(x-mean);
-                vector3_t t2 = sigma*sigma;
-                real_t xx = 0;
-                real_t kk = 1;
-                int ndim = 0;
-                for (int i = 0; i < 3; i++)
-                    if (sigma[i] > 0 ) {
-                        xx += t1[i]/t2[i];
-                        kk *= sigma[i];
-                        ndim++;
-                    }
-                return (1./(std::pow(SQRT_2PI_,ndim)*kk) * std::exp(-0.5*xx));
-            }
+      real_t gaussian3d(vector3_t x, vector3_t mean, vector3_t sigma) {
+        vector3_t t1 = (x - mean) * (x - mean);
+        vector3_t t2 = sigma * sigma;
+        vector3_t g;
+        for(int i = 0; i < 3; ++ i) {
+          if(sigma[i] > TINY_) g[i] = 1.0 / (SQRT_2PI_ * sigma[i]) * std::exp(-0.5 * t1[i] / t2[i]);
+          else g[i] = (x[i] - mean[i] < TINY_) ? 1.0 : 0.0;
+        } // for
+        return g[0] * g[1] * g[2];
+      } // gaussian3d()
+
+      real_t cauchy(real_t x, real_t l, real_t s) {
+        if(s > TINY_) return 1.0 / (PI_ * s * (1.0 + ((x - l) / s) * ((x - l) / s)));
+        else return (x - l > TINY_) ? 0.0 : 1.0;
+      } // cauchy()
 
     public:
       HipGISAXS(int, char**);
@@ -196,34 +195,45 @@ namespace hig {
           return true;
         #endif
       } // is_master()
+      int rank() {
+        #ifdef USE_MPI
+          return multi_node_.rank(sim_comm_);
+        #else
+          return 0;
+        #endif
+      } // rank()
 
       // fitting related ... TODO: improve
-      std::vector <std::string> fit_param_keys() const {
-        return input_->fitting().fit_param_keys();
-      } // get_fit_param_keys()
+
+      int num_analysis_algos() const { return input_->num_analysis_algos(); }
+      FittingAlgorithmName analysis_algo(int n) const { return input_->analysis_algo(n); }
+      real_t analysis_tolerance(int n) const { return input_->analysis_tolerance(n); }
+      real_t analysis_regularization(int n) const { return input_->analysis_regularization(n); }
+      bool analysis_algo_param(int n, std::string name, real_t& value) const {
+        return input_->analysis_algo_param(n, name, value); }
+      FittingDistanceMetric analysis_distance_metric(int n) const {
+        return input_->analysis_distance_metric(n); }
+
+      std::vector <std::string> fit_param_keys() const { return input_->fit_param_keys(); }
+      real_vec_t fit_param_step_values() const { return input_->fit_param_step_values(); }
       std::vector <std::pair <real_t, real_t> > fit_param_limits() const {
-        return input_->fitting().fit_param_limits();
-      } // get_fit_param_keys()
-      real_vec_t fit_param_step_values() const {
-        return input_->fitting().fit_param_step_values();
-      } // fit_param_step_values()
+        return input_->fit_param_limits(); }
+
       unsigned int nqx() const { return nqx_; }
       unsigned int nqy() const { return nqy_; }
       unsigned int nqz() const { return nqz_; }
       unsigned int ncol() const { return ncol_; }
       unsigned int nrow() const { return nrow_; }
 
-      string_t reference_data_path(int i) const {
-        return input_->fitting().reference_data_path();
-      } // reference_data_path()
-      string_t reference_data_mask(int i) const {
-        return input_->fitting().reference_data_mask();
-      } // reference_data_mask()
+      string_t reference_data_path(int i) const { return input_->reference_data_path(i); }
+      string_t reference_data_mask(int i) const { return input_->reference_data_mask(i); }
 
-      int num_fit_params() const { return input_->fitting().num_fit_params(); }
-      std::vector<real_t> fit_param_init_values() const {
-        return input_->fitting().fit_param_init_values();
-      } // fit_param_init_values()
+      int num_fit_params() const { return input_->num_fit_params(); }
+      std::vector<real_t> fit_param_init_values() const { return input_->fit_param_init_values(); }
+
+      real_t param_space_mean(const std::string& key) { return input_->param_space_mean(key); }
+      const std::string& path() const { return input_->path(); }
+      const std::string& runname() const { return input_->runname(); }
 
       bool override_qregion(unsigned int n_par, unsigned int n_ver, unsigned int i);
 

@@ -1,77 +1,270 @@
-PETSC_VERSION = "36"
+## the following are currently defined platforms:
+## * andromeda-gnu
+## * andromeda-intel
+## * nersc-gnu
+## * nersc-intel
+## * titan-gnu
+## * titan-intel
+## Note: all the Intel versions need to be tested first, so dont use them for now.
 
-MPI_DIR = /usr/local/openmpi
-#PETSC_DIR = /usr/local/petsc-3.4.3-gnu
-PETSC_DIR = /usr/local/petsc
-HIPGISAXS_DIR = ../..
-BOOST_DIR = /usr/local/boost
-CUDA_DIR = /usr/local/cuda
+HIPGISAXS_DIR=../..
 
-PREFIX = $(PWD)
-INCL_DIR =$(PREFIX)
-LIB_DIR = $(PREFIX)
-SRC_DIR = $(PREFIX)
-BIN_DIR = $(PREFIX)
-OBJ_DIR = $(PREFIX)
+default:
+	( $(MAKE) error )
 
-CXX = mpicxx
-CXX_FLAGS = -std=c++11 -fopenmp -DUSE_MPI
-CXX_FLAGS += -O3
-#CXX_FLAGS += -g
-PREC_FLAG = -DDOUBLEP
+gnu:
+	(	\
+		)
 
-ifeq ($(PETSC_VERSION), "36")
-  CXX_FLAGS += -DPETSC_36
-  TAO_DIR =
-  TAO_INCL =
-  TAO_LDFLAGS =
-  TAO_LIBS =
-else
-ifeq ($(PETSC_VERSION), "35")
-  CXX_FLAGS += -DPETSC_35
-  TAO_DIR =
-  TAO_INCL =
-  TAO_LDFLAGS =
-  TAO_LIBS =
-else
-  TAO_DIR = /usr/local/tao-2.2.0
-  TAO_INCL = -I $(TAO_DIR)/include
-  TAO_LDFLAGS = -L $(TAO_DIR)/lib
-  TAO_LIBS = -ltao
-endif
-endif
+intel:
+	(	\
+		)
 
+bragg-gnu:
+	( $(MAKE) hipgisaxs install                               \
+		"HIPGISAXS_DIR = ../.."                                 \
+		"PETSC_DIR = /usr/local/petsc"                          \
+		"PETSC_VERSION = \"3.7\""                               \
+		"CUDA_DIR = /usr/local/cuda"                            \
+		"CXX = mpicxx"                                          \
+		"CXX_FLAGS = -std=c++11 -fopenmp -DUSE_MPI"             \
+		"CXX_FLAGS += -O3"                                      \
+		"OPT_FLAGS = -O3"                                       \
+		"DBG_FLAGS = -g"                                        \
+		"MPI_LIBS = -lmpi -lmpi_cxx"                            \
+		"PETSC_LIBS = -lpetsc"                                  \
+		"HDF5_LIBS = -lhdf5 -lz"                                \
+		)
+
+andromeda-gnu:
+	( $(MAKE) hipgisaxs install                               \
+		"MPI_DIR = /usr/local/openmpi"                          \
+		"PETSC_DIR = /usr/local/petsc-3.6.3"                    \
+		"PETSC_VERSION = \"3.6\""                               \
+		"HIPGISAXS_DIR = ../.."                                 \
+		"HDF5_DIR = /usr/local/hdf5-1.8.9"                      \
+		"TIFF_DIR = /usr/local/tiff-4.0.2"                      \
+		"BOOST_DIR = /usr/local/boost"                          \
+		"SZIP_DIR = /usr/local/szip-2.1"                        \
+		"CUDA_DIR = /usr/local/cuda"                            \
+		"CXX = mpicxx"                                          \
+		"CXX_FLAGS = -std=c++11 -fopenmp -DUSE_MPI"             \
+		"CXX_FLAGS += -O3"                                      \
+		"OPT_FLAGS = -O3"                                       \
+		"DBG_FLAGS = -g"                                        \
+		"MPI_LIBS = -lmpi -lmpi_cxx"                            \
+		"PETSC_LIBS = -lpetsc"                                  \
+		"HDF5_LIBS = -lhdf5 -lz"                                \
+		)
+
+test-andromeda-gnu:
+	( $(MAKE) test                               \
+		"MPI_DIR = /usr/local/openmpi"                          \
+		"PETSC_DIR = /usr/local/petsc-3.6.3"                    \
+		"PETSC_VERSION = \"3.6\""                               \
+		"HIPGISAXS_DIR = ../.."                                 \
+		"HDF5_DIR = /usr/local/hdf5-1.8.9"                      \
+		"TIFF_DIR = /usr/local/tiff-4.0.2"                      \
+		"BOOST_DIR = /usr/local/boost"                          \
+		"SZIP_DIR = /usr/local/szip-2.1"                        \
+		"CUDA_DIR = /usr/local/cuda"                            \
+		"CXX = mpicxx"                                          \
+		"CXX_FLAGS = -std=c++11 -fopenmp -DUSE_MPI"             \
+		"CXX_FLAGS += -O3"                                      \
+		"OPT_FLAGS = -O3"                                       \
+		"DBG_FLAGS = -g"                                        \
+		"MPI_LIBS = -lmpi -lmpi_cxx"                            \
+		"PETSC_LIBS = -lpetsc"                                  \
+		"HDF5_LIBS = -lhdf5 -lz"                                \
+		)
+
+# with intel don't use mpi for now as it has not been tested
+andromeda-intel:
+	( $(MAKE) hipgisaxs install                               \
+		"PETSC_DIR = /usr/local/petsc-3.6.2"                    \
+		"PETSC_VERSION = \"3.6\""                               \
+		"HIPGISAXS_DIR = $(HOME)/hipgisaxs.edison.git"          \
+		"HDF5_DIR = /usr/local/hdf5-1.8.9-intel"                \
+		"TIFF_DIR = /usr/local/tiff-4.0.2-intel"                \
+		"BOOST_DIR = /usr/local/boost"                          \
+		"SZIP_DIR = /usr/local/szip-2.1"                        \
+		"CUDA_DIR = /usr/local/cuda"                            \
+		"CXX = icpc"                                            \
+		"CXX_FLAGS = -std=c++11 -openmp"                        \
+		"CXX_FLAGS += -O3"                                      \
+		"OPT_FLAGS = -O3"                                       \
+		"DBG_FLAGS = -g"                                        \
+		"PETSC_LIBS = -lpetsc"                                  \
+		"HDF5_LIBS = -lhdf5 -lz"                                \
+		)
+
+nersc-intel:
+	( $(MAKE) hipgisaxs install                               \
+		"PETSC_DIR = $(PETSC_DIR)"                              \
+		"PETSC_VERSION = \"3.7\""                               \
+		"HIPGISAXS_DIR = ../.."                                 \
+		"BOOST_DIR = $(BOOST_DIR)"                              \
+		"HDF5_DIR = $(HOME)/local/hdf5-1.8.9-edison-intel"      \
+		"TIFF_DIR = $(HOME)/local/tiff-4.0.2-edison-intel"      \
+		"TAO_DIR = $(HOME)/local/tao-2.2.0-intel/lib64/python2.6/site-packages/tao"	\
+		"CXX = CC"                                              \
+		"CXX_FLAGS = -std=c++11 -qopenmp -DUSE_MPI"              \
+		"CXX_FLAGS += -O3"                                      \
+		"OPT_FLAGS = -O3"                                       \
+		"DBG_FLAGS = -g"                                        \
+		"PETSC_LIBS = -lcraypetsc_intel_real"                   \
+		"HIPGISAXS_LIBS = -lhipgisaxs -lstdc++"                 \
+		)
+
+#"HDF5_LIBS = -lhdf5 -lz"                                \
+
+nersc-gnu:
+	( $(MAKE) hipgisaxs install                               \
+		"PETSC_DIR = $(PETSC_DIR)"                              \
+		"PETSC_VERSION = \"3.6\""                               \
+		"HIPGISAXS_DIR = ../.."                                 \
+		"BOOST_DIR = $(BOOST_DIR)"                              \
+		"HDF5_DIR = $(HOME)/local/hdf5-1.8.9-edison-gnu"        \
+		"TIFF_DIR = $(HOME)/local/tiff-4.0.2-edison-gnu"        \
+		"TAO_DIR = $(HOME)/local/tao-2.2.0-gnu/lib64/python2.6/site-packages/tao"	\
+		"CXX = CC"                                              \
+		"CXX_FLAGS = -std=c++11 -fopenmp -DUSE_MPI"             \
+		"CXX_FLAGS += -O3"                                      \
+		"OPT_FLAGS = -O3"                                       \
+		"DBG_FLAGS = -g"                                        \
+		"PETSC_LIBS = -lcraypetsc_gnu_real"                     \
+		"HIPGISAXS_LIBS = -lhipgisaxs"                          \
+		"HDF5_LIBS = -lhdf5 -lz -lsz"                           \
+		)
+
+titan-gnu:
+	( $(MAKE) hipgisaxs install                               \
+		"PETSC_DIR = $(PETSC_DIR)"                              \
+		"PETSC_VERSION = \"3.6\""                               \
+		"HIPGISAXS_DIR = ../.."                                 \
+		"BOOST_DIR = $(BOOST_DIR)"                              \
+		"CUDA_DIR = $(CRAY_CUDATOOLKIT_DIR)"                    \
+		"CXX = CC"                                              \
+		"CXX_FLAGS = -std=c++11 -fopenmp -DUSE_MPI"             \
+		"CXX_FLAGS += -O3"                                      \
+		"OPT_FLAGS = -O3"                                       \
+		"DBG_FLAGS = -g"                                        \
+		"PETSC_LIBS = -lcraypetsc_gnu_real"                     \
+		"HIPGISAXS_LIBS = -lhipgisaxs -lcudart"                 \
+		)
+
+daint-gnu:
+	( $(MAKE) hipgisaxs install                               \
+		"PETSC_DIR = $(CRAY_PETSC_DIR)"                         \
+		"PETSC_VERSION = \"3.7\""                               \
+		"HIPGISAXS_DIR = ../.."                                 \
+		"BOOST_DIR = $(BOOST_ROOT)"                             \
+		"CUDA_DIR = $(CRAY_CUDATOOLKIT_DIR)"                    \
+		"CXX = CC"                                              \
+		"CXX_FLAGS = -std=c++11 -fopenmp -DUSE_MPI"             \
+		"CXX_FLAGS += -O3"                                      \
+		"OPT_FLAGS = -O3"                                       \
+		"DBG_FLAGS = -g"                                        \
+    "YAML_LIBS = "                                          \
+		"PETSC_LIBS = -lcraypetsc_gnu_real-64"                  \
+		"HIPGISAXS_LIBS = -lhipgisaxs -lcuda"                   \
+		)
+
+ifdef MPI_DIR
 MPI_LDFLAGS = -L $(MPI_DIR)/lib
-MPI_LIBS = -lmpi -lmpi_cxx
-
+endif
+ifdef PETSC_DIR
 PETSC_INCL = -I $(PETSC_DIR)/include
-PETSC_LDFLAGS = -L $(PETSC_DIR)/lib #-Wl,-rpath,$(PETSC_DIR)/lib #-L /usr/syscom/opt/torque/4.1.4/lib
-PETSC_LIBS = -lpetsc
-
-HIPGISAXS_INCL = -I $(HIPGISAXS_DIR)/include -I $(CUDA_DIR)/include
-HIPGISAXS_LDFLAGS = -L $(HIPGISAXS_DIR)/lib -L $(CUDA_DIR)/lib64
-HIPGISAXS_LIBS = -lhipgisaxs -lcudart
-
+PETSC_LDFLAGS = -L $(PETSC_DIR)/lib
+endif
+ifdef HDF5_DIR
 HDF5_INCL = -I $(HDF5_DIR)/include
-HDF5_LDFLAGS = -L $(HDF5_DIR)/lib -L $(SZIP_DIR)/lib
-HDF5_LIBS = -lhdf5 -lz #-lsz
-
+HDF5_LDFLAGS = -L $(HDF5_DIR)/lib
+ifdef SZIP_DIR
+HDF5_LDFLAGS += -L $(SZIP_DIR)/lib
+endif
+endif
+ifdef TIFF_DIR
 TIFF_INCL = -I $(TIFF_DIR)/include
 TIFF_LDFLAGS = -L $(TIFF_DIR)/lib
+endif
+
+PREFIX  = $(PWD)
+SRC_DIR = $(PREFIX)
+BIN_DIR = $(PREFIX)
+PREC_FLAG = -DDOUBLEP    ## double precision is default
+
+ALL_FLAGS = -g $(CXX_FLAGS) $(PREC_FLAG) $(PETSC_FLAG)
+
+all: andromeda-gnu
+	@echo $(PETSC_VERSION)
+
+
+ifeq ($(PETSC_VERSION), "3.7")
+PETSC_FLAG += -DPETSC_37
+TAO_DIR =
+TAO_INCL =
+TAO_LDFLAGS =
+TAO_LIBS =
+else
+ifeq ($(PETSC_VERSION), "3.6")
+PETSC_FLAG += -DPETSC_36
+TAO_DIR =
+TAO_INCL =
+TAO_LDFLAGS =
+TAO_LIBS =
+else
+ifeq ($(PETSC_VERSION), "3.5")
+PETSC_FLAG += -DPETSC_35
+TAO_DIR =
+TAO_INCL =
+TAO_LDFLAGS =
+TAO_LIBS =
+else
+ifdef TAO_DIR
+TAO_INCL = -I $(TAO_DIR)/include
+TAO_LDFLAGS = -L $(TAO_DIR)/lib
+else
+TAO_DIR = /usr/local/tao-2.2.0
+TAO_INCL = -I $(TAO_DIR)/include
+TAO_LDFLAGS = -L $(TAO_DIR)/lib
+endif
+TAO_LIBS = -ltao
+endif
+endif
+endif
+
+ifdef HIPGISAXS_DIR
+HIPGISAXS_INCL = -I $(HIPGISAXS_DIR)/include
+HIPGISAXS_LDFLAGS = -L $(HIPGISAXS_DIR)/lib
+ifdef CUDA_DIR
+HIPGISAXS_INCL += -I $(CUDA_DIR)/include
+HIPGISAXS_LDFLAGS += -L $(CUDA_DIR)/lib64
+endif
+endif
+HIPGISAXS_LIBS = -lhipgisaxs -lcudart
+
 TIFF_LIBS = -ltiff
 
+ifdef BOOST_DIR
 BOOST_INCL = -I $(BOOST_DIR)/include
 BOOST_LDFLAGS = -L $(BOOST_DIR)/lib
+endif
 BOOST_LIBS = -lboost_system -lboost_filesystem -lboost_timer -lboost_chrono
+
+ifdef YAML
+YAML_LIBS = -lyaml-cpp
+endif
 
 
 ## all objs and libs                                                                                                                           
 ALL_INCL= $(TAO_INCL) $(PETSC_INCL) $(HDF5_INCL) $(TIFF_INCL) $(BOOST_INCL) $(HIPGISAXS_INCL)
 ALL_LDFLAGS = $(MPI_LDFLAGS) $(TAO_LDFLAGS) $(GCC_LDFLAGS) $(PETSC_LDFLAGS) \
-              $(HIPGISAXS_LDFLAGS) $(HDF5_LDFLAGS) $(TIFF_LDFLAGS) $(BOOST_LDFLAGS)
-ALL_LIBS = $(MPI_LIBS) $(TAO_LIBS) $(PETSC_LIBS) $(HIPGISAXS_LIBS) $(HDF5_LIBS) $(TIFF_LIBS) $(BOOST_LIBS)
+		          $(HIPGISAXS_LDFLAGS) $(HDF5_LDFLAGS) $(TIFF_LDFLAGS) $(BOOST_LDFLAGS)
+ALL_LIBS = $(MPI_LIBS) $(TAO_LIBS) $(PETSC_LIBS) $(HIPGISAXS_LIBS) $(HDF5_LIBS) $(TIFF_LIBS) $(BOOST_LIBS) $(YAML_LIBS)
 
-OBJECTS = ImageData.o analysis_algorithm.o objective_func.o hipgisaxs_ana.o objective_func_hipgisaxs.o
+OBJECTS = ImageData.o analysis_algorithm.o objective_func.o hipgisaxs_ana.o \
+					objective_func_hipgisaxs.o hipgisaxs_compute_objective.o
 
 POUND_OBJS = hipgisaxs_fit_pounders.o
 POUND_HIP_OBJS = $(POUND_OBJS) hipgisaxs_fit_pounders_main.o
@@ -96,13 +289,13 @@ BINARY = analyze
 
 all: hipgisaxs
 
-test:
-	(make $(BINARY) \
-		"OBJECTS = $(OBJECTS) $(TEST_HIP_OBJS)")
-
 hipgisaxs:
 	(make $(BINARY) \
 		"OBJECTS = $(OBJECTS) $(HIP_OBJS)")
+
+test:
+	(make $(BINARY) \
+		"OBJECTS = $(OBJECTS) $(TEST_HIP_OBJS)")
 
 pounders:
 	(make $(BINARY) \
@@ -126,13 +319,43 @@ lmvm:
 
 ## c++ compilation                                                                                                                             
 %.o: $(SRC_DIR)/%.cpp
-	$(CXX) -c $< -o $@  $(CXX_FLAGS) $(PREC_FLAG) $(ALL_INCL) 
+	$(CXX) -c $< -o $@  $(ALL_FLAGS) $(ALL_INCL) 
 
 $(BINARY): $(OBJECTS)
-	$(CXX)  $(CXX_FLAGS) $(PREC_FLAG) -o $(BIN_DIR)/$@ $^ $(ALL_LDFLAGS) $(ALL_LIBS)
+	$(CXX) $(ALL_FLAGS) -o $(BIN_DIR)/$@ $^ $(ALL_LDFLAGS) $(ALL_LIBS)
 
 clean:
 	rm -f *.o $(BINARY) $(HIPGISAXS_DIR)/bin/$(BINARY)
 
 install: $(BINARY)
 	@install -v $(BINARY) $(HIPGISAXS_DIR)/bin
+
+error: errormsg
+
+errormsg:
+	@echo ""
+	@echo "usage: $(MAKE) <target> [options]"
+	@echo ""
+	@echo "target: some examples are"
+	@echo "          andromeda-intel"
+	@echo "          andromeda-gnu"
+	@echo "          bragg-gnu"
+	@echo "          nersc-intel"
+	@echo "          nersc-gnu"
+	@echo "          titan-gnu"
+	@echo "          daint-gnu"
+	@echo ""
+	@echo "options: none yet."
+	@echo ""
+	@echo "following environment variables may also be defined:"
+	@echo "          HIPGISAXS_DIR"
+	@echo "          TIFF_DIR"
+	@echo "          BOOST_DIR"
+	@echo "          PETSC_VERSION"
+	@echo "          PETSC_DIR"
+	@echo "          MPI_DIR"
+	@echo "          CUDA_DIR"
+	@echo "          HDF5_DIR"
+	@echo "          SZIP_DIR"
+	@echo ""
+

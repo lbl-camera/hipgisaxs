@@ -5,11 +5,6 @@
  *  Created: Jun 12, 2012
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -34,28 +29,28 @@
 namespace hig {
 
 
-    /** grain scaling methods
-     */
+  /** grain scaling methods
+   */
 
-    GrainScaling::GrainScaling() {
+  GrainScaling::GrainScaling() {
     init();
   } // GrainScaling::GrainScaling()
 
-    void GrainScaling::init() {
-        mean_[0] = mean_[1] = mean_[2] = 1;
-        stddev_[0] = stddev_[1] = stddev_[2] = 0;
-        for (int i = 0; i < 3; i++) {
-            dist_.push_back(stat_gaussian);
-            nvals_.push_back(40);
-        } // for
-    } // GrainScaling::init()
+  void GrainScaling::init() {
+    mean_[0] = mean_[1] = mean_[2] = 1;
+    stddev_[0] = stddev_[1] = stddev_[2] = 0;
+    for(int i = 0; i < 3; ++ i) {
+      dist_.push_back(stat_none);
+      nvals_.push_back(40);   // FIXME
+    } // for
+  } // GrainScaling::init()
 
-    void GrainScaling::clear() {
-        mean_[0] = mean_[1] = mean_[2] = 0;
-        stddev_[0] = stddev_[1] = stddev_[2] = 0;
-        dist_.clear();
-        nvals_.clear();
-    } // GrainScaling::clear()
+  void GrainScaling::clear() {
+      mean_[0] = mean_[1] = mean_[2] = 0;
+      stddev_[0] = stddev_[1] = stddev_[2] = 0;
+      dist_.clear();
+      nvals_.clear();
+  } // GrainScaling::clear()
 
 
   /** lattice functions
@@ -275,8 +270,12 @@ namespace hig {
           rot1_.angles_min(new_val);
         } else if(keyword2.compare("max") == 0 || keyword2.compare("1") == 0) {
           rot1_.angles_max(new_val);
+        } else if(keyword2.compare("anglelocation") == 0) {
+          rot1_.angle_location(new_val);
         } else if(keyword2.compare("anglemean") == 0) {
           rot1_.angle_mean(new_val);
+        } else if(keyword2.compare("anglescale") == 0) {
+          rot1_.angle_scale(new_val);
         } else if(keyword2.compare("anglesd") == 0) {
           rot1_.angle_sd(new_val);
         } else {
@@ -296,8 +295,12 @@ namespace hig {
           rot2_.angles_min(new_val);
         } else if(keyword2.compare("max") == 0 || keyword2.compare("1") == 0) {
           rot2_.angles_min(new_val);
+        } else if(keyword2.compare("anglelocation") == 0) {
+          rot2_.angle_location(new_val);
         } else if(keyword2.compare("anglemean") == 0) {
           rot2_.angle_mean(new_val);
+        } else if(keyword2.compare("anglescale") == 0) {
+          rot2_.angle_scale(new_val);
         } else if(keyword2.compare("anglesd") == 0) {
           rot2_.angle_sd(new_val);
         } else {
@@ -317,8 +320,12 @@ namespace hig {
           rot3_.angles_min(new_val);
         } else if(keyword2.compare("max") == 0 || keyword2.compare("1") == 0) {
           rot3_.angles_max(new_val);
+        } else if(keyword2.compare("anglelocation") == 0) {
+          rot3_.angle_location(new_val);
         } else if(keyword2.compare("anglemean") == 0) {
           rot3_.angle_mean(new_val);
+        } else if(keyword2.compare("anglescale") == 0) {
+          rot3_.angle_scale(new_val);
         } else if(keyword2.compare("anglesd") == 0) {
           rot3_.angle_sd(new_val);
         } else {
@@ -671,7 +678,7 @@ namespace hig {
                     grain_.scaling_.stddev_[1] = new_val;
                     break;
                   case nsamples_token:
-                    grain_.scaling_.nvals_[0] = new_val;
+                    grain_.scaling_.nvals_[1] = new_val;
                     break;
                   default:
                     std::cerr << "error: invalid keyword '" << keyword4 << "' in param '"
@@ -690,7 +697,7 @@ namespace hig {
                     grain_.scaling_.stddev_[2] = new_val;
                     break;
                   case nsamples_token:
-                    grain_.scaling_.nvals_[0] = new_val;
+                    grain_.scaling_.nvals_[2] = new_val;
                     break;
                   default:
                     std::cerr << "error: invalid keyword '" << keyword4 << "' in param '"

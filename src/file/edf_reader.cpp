@@ -5,10 +5,6 @@
  *  Created: Aug 25, 2013
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Abhinav Sarje <asarje@lbl.gov>
- *              Dinesh Kumar <dkumar@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -37,7 +33,7 @@ namespace hig {
     if(!extract_data(infile, dataseg, EDF_CHUNK_SIZE)) exit(1);
     infile.close();
     delete[] dataseg;
-    print_header();
+    //print_header();
     //print_data();
   } // EDFReader::EDFReader()
 
@@ -184,8 +180,8 @@ namespace hig {
   void EDFWriter::Write(real_t * data){
     std::fstream edf(filename_, std::ios::out | std::ios::binary);
     if (!edf.is_open()){
-        std::cerr << "Error: failed to open EDF file for writing" << std::endl;
-        return;
+      std::cerr << "Error: failed to open EDF file for writing" << std::endl;
+      return;
     }
 
     std::string type("float");
@@ -201,7 +197,6 @@ namespace hig {
     edf << "Size              = " << size * sizeof(float)  << std::endl;
     edf << "DataType          = " << type      << std::endl;
     
-
     // First 1024 bytes are reserved for header
     edf.seekp(1024);
     for (int i = 0; i < size; i++ ){

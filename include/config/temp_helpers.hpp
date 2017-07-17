@@ -88,41 +88,49 @@ namespace hig {
 
   typedef std::map <FitAlgorithmParamType, AnalysisAlgorithmParamData> analysis_algo_param_map_t;
 
+
   class AnalysisAlgorithmData {
+
     private:
-      //std::vector <AnalysisAlgorithmParamData> params_;
+
       analysis_algo_param_map_t params_map_;
       int order_;
       real_t tolerance_;
+      real_t regularization_;
       FittingAlgorithmName name_;
       std::string name_str_;
+      FittingDistanceMetric distance_metric_;
       bool restart_;
 
     public:
-      AnalysisAlgorithmData() { }
+
+      AnalysisAlgorithmData() { regularization_ = 0.0; }
       ~AnalysisAlgorithmData() { }
 
       bool init() { return clear(); }
 
       bool clear() {
-        //params_.clear();
         params_map_.clear();
         return true;
       } // clear()
 
       bool add_param(const AnalysisAlgorithmParamData& p) {
-        //params_.push_back(p);
         params_map_[p.type()] = p;
         return true;
       } // add_param()
 
       bool order(int o) { order_ = o; return true; }
       bool tolerance(real_t t) { tolerance_ = t; return true; }
+      bool regularization(real_t r) { regularization_ = r; return true; }
       bool name(FittingAlgorithmName n) { name_ = n; return true; }
       bool name_str(std::string n) { name_str_ = n; return true; }
+      bool distance_metric(FittingDistanceMetric m) { distance_metric_ = m; return true; }
       bool restart(bool r) { restart_ = r; return true; }
 
       FittingAlgorithmName name() const { return name_; }
+      real_t tolerance() const { return tolerance_; }
+      real_t regularization() const { return regularization_; }
+      FittingDistanceMetric distance_metric() const { return distance_metric_; }
 
       bool param(const std::string pstr, real_t& val) const {
         FitAlgorithmParamType type = TokenMapper::instance().get_fit_algorithm_param_token(pstr);
@@ -138,18 +146,15 @@ namespace hig {
       void print() const {
         std::cout << order_ << ": " << name_str_ << " [" << name_ << "]" << std::endl;
         std::cout << "  Tolerance: " << tolerance_ << std::endl;
+        std::cout << "  Regularization: " << regularization_ << std::endl;
         std::cout << "  Algorithm Parameters: " << std::endl;
         for(analysis_algo_param_map_t::const_iterator i = params_map_.begin();
             i != params_map_.end(); ++ i) {
           std::cout << "  "; (*i).second.print();
         } // for
-        //for(std::vector <AnalysisAlgorithmParamData>::const_iterator i = params_.begin();
-        //    i != params_.end(); ++ i) {
-        //  std::cout << "  ";
-        //  (*i).print();
-        //} // for
+        std::cout << "  Distance Metric: " << distance_metric_ << std::endl;
       } // print()
-  }; // class AnalysisAlgorithm
+  }; // class AnalysisAlgorithmData
 
   typedef std::vector <AnalysisAlgorithmData> analysis_algo_list_t;
 

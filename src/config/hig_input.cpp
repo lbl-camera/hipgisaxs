@@ -5,11 +5,6 @@
  *  Created: Jun 11, 2012
  *
  *  Author: Abhinav Sarje <asarje@lbl.gov>
- *  Developers: Slim Chourou <stchourou@lbl.gov>
- *              Abhinav Sarje <asarje@lbl.gov>
- *              Elaine Chan <erchan@lbl.gov>
- *              Alexander Hexemer <ahexemer@lbl.gov>
- *              Xiaoye Li <xsli@lbl.gov>
  *
  *  Licensing: The HipGISAXS software is only available to be downloaded and
  *  used by employees of academic research institutions, not-for-profit
@@ -802,7 +797,9 @@ namespace hig {
       case struct_ensemble_orient_rot3_token:
       case struct_ensemble_orient_rot_axis_token:
       case struct_ensemble_orient_rot_angles_token:
+      case struct_ensemble_orient_rot_anglelocation_token:
       case struct_ensemble_orient_rot_anglemean_token:
+      case struct_ensemble_orient_rot_anglescale_token:
       case struct_ensemble_orient_rot_anglesd_token:
         break;
 
@@ -885,6 +882,10 @@ namespace hig {
       case fit_algorithm_param_value_token:
       case fit_algorithm_restart_token:
       case fit_algorithm_tolerance_token:
+      case fit_algorithm_regularization_token:
+        break;
+
+      case fit_algorithm_distance_metric_token:
         break;
 
       default:
@@ -1014,7 +1015,7 @@ namespace hig {
         } else {
           curr_vector_.push_back(num);
           if(curr_vector_.size() > 3) {
-            std::cerr << "error : scaling can be a scalar, vector[3] or a distribution." << std::endl;
+            std::cerr << "error: scaling can be a scalar, vector[3] or a distribution" << std::endl;
             return false;
           } // if
         } // if-else
@@ -1294,6 +1295,24 @@ namespace hig {
         } // if
         break;
 
+      case struct_ensemble_orient_rot_anglelocation_token:
+        parent = get_curr_parent();
+        switch(parent) {
+          case struct_ensemble_orient_rot1_token:
+            curr_structure_.grain_orientation_rot1_anglelocation(num);
+            break;
+          case struct_ensemble_orient_rot2_token:
+            curr_structure_.grain_orientation_rot2_anglelocation(num);
+            break;
+          case struct_ensemble_orient_rot3_token:
+            curr_structure_.grain_orientation_rot3_anglelocation(num);
+            break;
+          default:
+            std::cerr << "error: something wrong in the rot angle location" << std::endl;
+            return false;
+        } // switch
+        break;
+
       case struct_ensemble_orient_rot_anglemean_token:
         parent = get_curr_parent();
         switch(parent) {
@@ -1308,6 +1327,24 @@ namespace hig {
             break;
           default:
             std::cerr << "error: something wrong in the rot angle mean" << std::endl;
+            return false;
+        } // switch
+        break;
+
+      case struct_ensemble_orient_rot_anglescale_token:
+        parent = get_curr_parent();
+        switch(parent) {
+          case struct_ensemble_orient_rot1_token:
+            curr_structure_.grain_orientation_rot1_anglescale(num);
+            break;
+          case struct_ensemble_orient_rot2_token:
+            curr_structure_.grain_orientation_rot2_anglescale(num);
+            break;
+          case struct_ensemble_orient_rot3_token:
+            curr_structure_.grain_orientation_rot3_anglescale(num);
+            break;
+          default:
+            std::cerr << "error: something wrong in the rot angle scale" << std::endl;
             return false;
         } // switch
         break;
@@ -1434,6 +1471,10 @@ namespace hig {
 
       case fit_algorithm_tolerance_token:
         curr_fit_algo_.tolerance(num);
+        break;
+
+      case fit_algorithm_regularization_token:
+        curr_fit_algo_.regularization(num);
         break;
 
       default:
@@ -1583,6 +1624,7 @@ namespace hig {
             break;
 
           case struct_grain_xrepetition_token:
+            curr_structure_.grain_xrepetition_stat(TokenMapper::instance().get_stattype_token(str));
             break;
 
           case struct_grain_yrepetition_token:
@@ -1725,6 +1767,10 @@ namespace hig {
       case fit_algorithm_name_token:
         curr_fit_algo_.name(TokenMapper::instance().get_fit_algorithm_name(str));
         curr_fit_algo_.name_str(str);
+        break;
+
+      case fit_algorithm_distance_metric_token:
+        curr_fit_algo_.distance_metric(TokenMapper::instance().get_fit_distance_metric(str));
         break;
 
       case fit_algorithm_restart_token:
@@ -1889,7 +1935,7 @@ namespace hig {
               break;
             default:
               std::cerr << "error: invalid parameter found in a shape" << std::endl;
-              return false;
+            return false;
           } // switch
           ++ param;
         } // while
@@ -2667,13 +2713,13 @@ namespace hig {
     //print_all();
     for(map_t::const_iterator p = params.begin(); p != params.end(); ++ p) {
       real_t new_val = (*p).second;
-      // check if new_val is within the param space
       ParamSpace ps = param_space_key_map_.at((*p).first);  // if not exist, exception!!
-      if(new_val < ps.min_ || new_val > ps.max_) {
-        std::cerr << "warning: given parameter value out of range space. resetting to limit."
-              << std::endl;
-        new_val = std::max(std::min(new_val, ps.max_), ps.min_);
-      } // if
+      // check if new_val is within the param space
+      //if(new_val < ps.min_ || new_val > ps.max_) {
+      //  std::cerr << "warning: given parameter value out of range space. resetting to limit."
+      //        << std::endl;
+      //  new_val = std::max(std::min(new_val, ps.max_), ps.min_);
+      //} // if
       std::string param = param_key_map_.at((*p).first);  // if not exist, exception!!
       // get first component from the string
       std::string keyword, rem_param;

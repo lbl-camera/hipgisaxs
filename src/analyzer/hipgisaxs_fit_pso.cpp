@@ -25,8 +25,8 @@ namespace hig {
       bool tune_omega = false, int type = 0) :
         rand_(time(NULL)), type_(type) {
     name_ = algo_pso;
-    max_hist_ = 100;      // not used ...
-    tol_ = 1e-8;
+    max_hist_ = 100;      // not used in pso
+    tol_ = 1e-6;          // default?
 
     obj_func_ = obj;
 
@@ -43,11 +43,9 @@ namespace hig {
     tune_omega_ = tune_omega;
 
     // get number of particles
-    //num_particles_ = atoi(args[2]);
     num_particles_ = npart;
     num_particles_global_ = npart;
     // max number of generations
-    //max_iter_ = atoi(args[3]);
     max_iter_ = ngen;
 
     init();
@@ -55,38 +53,41 @@ namespace hig {
 
 
   ParticleSwarmOptimization::ParticleSwarmOptimization(int narg, char** args,
-      ObjectiveFunction* obj, unsigned int algo_num, bool tune_omega = false, int type = 0) :
+                                                       ObjectiveFunction* obj,
+                                                       unsigned int algo_num,
+                                                       bool tune_omega = false,
+                                                       int type = 0) :
       rand_(time(NULL)), type_(type) {
     name_ = algo_pso;
-    max_hist_ = 100;
-    tol_ = 1e-8;
-
+    max_hist_ = 200;
     obj_func_ = obj;
+
+    tol_ = (*obj_func_).analysis_tolerance(algo_num);
 
     foresee_num_ = 5;      // TODO: make it modifiable
 
     real_t temp_val = 0.0;
 
     // mandatory PSO parameters
-    if(!HiGInput::instance().analysis_algo_param(algo_num, "pso_omega", pso_omega_)) {
+    if(!(*obj_func_).analysis_algo_param(algo_num, "pso_omega", pso_omega_)) {
       std::cerr << "error: mandatory PSO parameter 'pso_omega' missing" << std::endl;
       exit(-1);
     } // if
-    if(!HiGInput::instance().analysis_algo_param(algo_num, "pso_phi1", pso_phi1_)) {
+    if(!(*obj_func_).analysis_algo_param(algo_num, "pso_phi1", pso_phi1_)) {
       std::cerr << "error: mandatory PSO parameter 'pso_phi1' missing" << std::endl;
       exit(-1);
     } // if
-    if(!HiGInput::instance().analysis_algo_param(algo_num, "pso_phi2", pso_phi2_)) {
+    if(!(*obj_func_).analysis_algo_param(algo_num, "pso_phi2", pso_phi2_)) {
       std::cerr << "error: mandatory PSO parameter 'pso_phi2' missing" << std::endl;
       exit(-1);
     } // if
-    if(!HiGInput::instance().analysis_algo_param(algo_num, "pso_num_particles", temp_val)) {
+    if(!(*obj_func_).analysis_algo_param(algo_num, "pso_num_particles", temp_val)) {
       std::cerr << "error: mandatory PSO parameter 'pso_num_particles' missing" << std::endl;
       exit(-1);
     } else {
       num_particles_ = (unsigned int) temp_val;
     } // if-else
-    if(!HiGInput::instance().analysis_algo_param(algo_num, "pso_num_generations", temp_val)) {
+    if(!(*obj_func_).analysis_algo_param(algo_num, "pso_num_generations", temp_val)) {
       std::cerr << "error: mandatory PSO parameter 'pso_num_generations' missing" << std::endl;
       exit(-1);
     } else {
@@ -95,14 +96,14 @@ namespace hig {
     num_particles_global_ = num_particles_;
 
     // optional PSO parameters
-    if(!HiGInput::instance().analysis_algo_param(algo_num, "pso_tune_omega", temp_val)) {
+    if(!(*obj_func_).analysis_algo_param(algo_num, "pso_tune_omega", temp_val)) {
       std::cerr << "warning: optional PSO parameter 'pso_tune_omega' defaulted" << std::endl;
       tune_omega_ = false;
     } else {
       if(temp_val > 0.5) tune_omega_ = true;
       else tune_omega_ = false;
     } // if-else
-    if(!HiGInput::instance().analysis_algo_param(algo_num, "pso_type", temp_val)) {
+    if(!(*obj_func_).analysis_algo_param(algo_num, "pso_type", temp_val)) {
       std::cerr << "warning: optional PSO parameter 'pso_type' defaulted" << std::endl;
       type_ = 0;  // base algorithm
     } else {
@@ -127,8 +128,9 @@ namespace hig {
       multi_node_ = (*obj_func_).multi_node_comm();
       // the root communicator
       root_comm_ = (*multi_node_).universe_key();
-      std::cout << "** MPI Size: " << (*multi_node_).size(root_comm_);
-      std::cout << ", my rank: " << (*multi_node_).rank(root_comm_) << std::endl;
+      if((*multi_node_).is_master(root_comm_))
+        std::cout << "** MPI Size: " << (*multi_node_).size(root_comm_)
+                  << ", my rank: " << (*multi_node_).rank(root_comm_) << std::endl;
       rand_.reset(time(NULL) + (*multi_node_).rank(root_comm_));
     #else
       root_comm_ = "world";
@@ -149,7 +151,7 @@ namespace hig {
     } // for
     if(min_limits.size() < num_params_) min_limits.resize(num_params_, 0.0);
     if(max_limits.size() < num_params_) max_limits.resize(num_params_,
-                                std::numeric_limits<real_t>::max());
+                                                          std::numeric_limits<real_t>::max());
     constraints_.param_values_min_ = min_limits;
     constraints_.param_values_max_ = max_limits;
 
@@ -179,12 +181,6 @@ namespace hig {
       } else {
         // assign multiple procs per particle
         // procs for a particle will be in their common new world
-        // TODO ...
-        //std::cout << "error: this case has not been implemented yet ["
-        //      << num_particles_global_ << ", " << num_procs << "]"
-        //      << std::endl;
-        //exit(-1);
-        std::cout << "** The case with multiple MPI processes per particle" << std::endl;
         // split the world
         num_particles_ = 1;    // no fractional particles :P
         int color = rank % num_particles_global_;  // round-robin distribution for ease
@@ -202,8 +198,6 @@ namespace hig {
       for(int i = 0; i < (*multi_node_).size(root_comm_); ++ i)
         start_indices_.push_back(buff[i]);
       delete[] buff;
-
-      std::cout << "** " << rank << ": pmaster? " << particle_master << std::endl;
     #else
       particle_comm_ = root_comm_;
       pmasters_comm_ = root_comm_;
@@ -222,13 +216,14 @@ namespace hig {
     } // if
 
     if(is_master()) {
-      std::cout << "** PSO Parameters: Omega = " << pso_omega_ << std::endl
-            << "                   Phi1  = " << pso_phi1_ << std::endl
-            << "                   Phi2  = " << pso_phi2_ << std::endl
-            << "                   Npart = " << num_particles_ << std::endl
-            << "                   Ngen  = " << max_iter_ << std::endl
-            << "     PSO Algorithm Type  = " << type_ << std::endl
-            << "            Tune Omega?  = " << tune_omega_ << std::endl;
+      std::cout << "** Fitting Parameters: Tolerance = " << tol_ << std::endl
+                << "**     PSO Parameters:     Omega = " << pso_omega_ << std::endl
+                << "                     Tune Omega? = " << tune_omega_ << std::endl
+                << "                            Phi1 = " << pso_phi1_ << std::endl
+                << "                            Phi2 = " << pso_phi2_ << std::endl
+                << "                Number of Agents = " << num_particles_ << std::endl
+                << "           Number of Generations = " << max_iter_ << std::endl
+                << "            PSO Algorithm Flavor = " << type_ << std::endl;
     } // if
 
     return true;
@@ -429,8 +424,11 @@ namespace hig {
   } // ParticleSwarmOptimization::get_best_values()
 
 
-  bool ParticleSwarmOptimization::run(int narg, char** args, int img_num) {
-    std::cout << "Running Particle Swarm Optimization ..." << std::endl;
+  bool ParticleSwarmOptimization::run(int narg, char** args, int algo_num, int img_num) {
+    #ifdef USE_MPI
+    if((*multi_node_).is_master(root_comm_))
+    #endif
+      std::cout << "Running Particle Swarm Optimization ..." << std::endl;
 
     if(!(*obj_func_).set_reference_data(img_num)) return false;
 
@@ -438,7 +436,12 @@ namespace hig {
     double total_time = 0;
 
     for(int gen = 0; gen < max_iter_; ++ gen) {
-      std::cout << (*multi_node_).rank(root_comm_) << ": Generation " << gen << std::endl;
+
+      #ifdef USE_MPI
+      if((*multi_node_).is_master(root_comm_))
+      #endif
+        std::cout << "** Generation " << gen << std::endl;
+
       gen_timer.start();
       if(type_ == 2) {        // soothsayer
         if(!simulate_soothsayer_generation()) {
@@ -487,8 +490,8 @@ namespace hig {
       #ifdef USE_MPI
       if((*multi_node_).is_master(root_comm_))
       #endif
-        std::cout << "@@@@@@ Generation time: " << elapsed << " ms. [total: "
-              << total_time << " ms.]" << std::endl;
+        std::cout << "@@@ Generation time: " << elapsed << " ms. [total: "
+                  << total_time << " ms.]" << std::endl;
     } // for
     
     // set the final values
@@ -498,10 +501,9 @@ namespace hig {
     #ifdef USE_MPI
     if((*multi_node_).is_master(root_comm_)) {
     #endif
-      std::cout << "@@@@@@ Global best: ";
+      std::cout << "@@@ Global best: ";
       std::cout << best_fitness_ << " [ ";
-      for(int j = 0; j < num_params_; ++ j)
-        std::cout << params_[j] << ": " << best_values_[j] << " ";
+      for(int j = 0; j < num_params_; ++ j) std::cout << params_[j] << ": " << best_values_[j] << " ";
       std::cout << "]" << std::endl;
       std::ofstream outfile("hipgisaxs_fit_params.txt");
       for(int j = 0; j < num_params_; ++ j)
@@ -522,16 +524,21 @@ namespace hig {
     #ifdef USE_MPI
     myrank = (*multi_node_).rank(root_comm_);
     #endif
+
     for(int i = 0; i < num_particles_; ++ i) {
-      std::cout << myrank << ": Particle " << i << std::endl;
+
+      #ifdef USE_MPI
+      if((*multi_node_).is_master(root_comm_))
+      #endif
+        std::cout << "** Particle " << i << std::endl;
+
       // construct param map
-      //parameter_map_t curr_particle;
       real_vec_t curr_particle;
-      for(int j = 0; j < num_params_; ++ j)
-        curr_particle.push_back(particles_[i].param_values_[j]);
-        //curr_particle[params_[j]] = particles_[i].param_values_[j];
+      for(int j = 0; j < num_params_; ++ j) curr_particle.push_back(particles_[i].param_values_[j]);
+
       // tell hipgisaxs about the communicator to work with
       (*obj_func_).update_sim_comm(particle_comm_);
+
       // compute the fitness
       real_vec_t curr_fitness = (*obj_func_)(curr_particle);
 
@@ -553,42 +560,43 @@ namespace hig {
       #ifdef USE_MPI
       } // if
       #endif
-      //std::cout << "@@@@ " << i + 1 << ": " << curr_fitness[0] << " "
-      //  << particles_[i].best_fitness_ << " [ ";
-      //for(int j = 0; j < num_params_; ++ j) std::cout << particles_[i].param_values_[j] << " ";
-      //std::cout << "]" << std::endl;
+
+      // write out the current status
+      #ifdef USE_MPI
+      if((*multi_node_).is_master(particle_comm_)) {  // only particle masters do it
+      #endif
+        std::stringstream cfilename_s;
+        cfilename_s << "convergence." << myrank << "." << i << ".dat";
+        std::string prefix((*obj_func_).param_pathprefix() + "/" + (*obj_func_).runname());
+        std::ofstream out(prefix + "/" + cfilename_s.str(), std::ios::app);
+        out.precision(10);
+        out << myrank << "\t" << i << "\t" << curr_fitness[0] << "\t";
+        for(int j = 0; j < num_params_; ++ j) out << particles_[i].param_values_[j] << "\t";
+        out << particles_[i].best_fitness_ << "\t";
+        for(int j = 0; j < num_params_; ++ j) out << particles_[i].best_values_[j] << "\t";
+        out << std::endl;
+        out.close();
+      #ifdef USE_MPI
+      } // if
+      #endif
     } // for
 
     #ifdef USE_MPI
       // communicate and find globally best fitness
-      real_t new_best_fitness; int best_rank;
-      /*if((*multi_node_).size(particle_comm_) > 1 && num_particles_ == 1) {
-        // in the case when multiple procs work on one particle,
-        // only the master needs to communicate with other masters (for other particles)
-        // TODO ...
-        std::cout << "error: this case has not been implemented yet" << std::endl;
-        return false;
-        if(!(*multi_node_).allreduce(pmasters_comm_, best_fitness_, new_best_fitness, best_rank,
-                        woo::comm::minloc))
-          return false;
-        best_fitness_ = new_best_fitness;
-      } else {
-        if(!(*multi_node_).allreduce(root_comm_, best_fitness_, new_best_fitness, best_rank,
-                        woo::comm::minloc))
-          return false;
-        best_fitness_ = new_best_fitness;
-      } // if-else*/
+      real_t new_best_fitness = 0.0; int best_rank = -1;
       // all particle masters find the proc with global min
       if(!(*multi_node_).allreduce(pmasters_comm_, best_fitness_, new_best_fitness, best_rank,
-                      woo::comm::minloc))
+                                   woo::comm::minloc))
         return false;
+      best_fitness_ = new_best_fitness;   // this makes sense only on particle masters, but doesnt hurt
       // the best rank proc broadcasts its best values to all other particle masters
-      //if(!(*multi_node_).broadcast(root_comm_, best_values_, best_rank)) return false;
       if(!(*multi_node_).broadcast(pmasters_comm_, best_values_, best_rank)) return false;
       // also broadcast to other procs responsible for same particle, if is the case
       if((*multi_node_).size(particle_comm_) > 1) {
+        if(!(*multi_node_).broadcast(particle_comm_, best_fitness_,
+                                     (*multi_node_).master(particle_comm_))) return false;
         if(!(*multi_node_).broadcast(particle_comm_, best_values_,
-                      (*multi_node_).master(particle_comm_))) return false;
+                                     (*multi_node_).master(particle_comm_))) return false;
       } // if
     #endif
 
@@ -615,26 +623,20 @@ namespace hig {
     } // if
     #endif
 
-    if(tune_omega_) pso_omega_ /= 2.0;
-    std::cout << myrank << ": Omega = " << pso_omega_ << std::endl;
-
-    /*std::cout << "~~~~ Generation best: ";
-    for(int i = 0; i < num_particles_; ++ i) {
-      std::cout << "[ ";
-      for(int j = 0; j < num_params_; ++ j)
-        std::cout << particles_[i].param_values_[j] << " ";
-      std::cout << "]\t";
-    } // for
-    std::cout << std::endl;*/
+    if(tune_omega_) {
+      pso_omega_ /= 2.0;
+      #ifdef USE_MPI
+      if((*multi_node_).is_master(root_comm_))
+      #endif
+        std::cout << myrank << ": Omega = " << pso_omega_ << std::endl;
+    } // if
 
     // print the global best - only root master does this
     #ifdef USE_MPI
     if((*multi_node_).is_master(root_comm_)) {
     #endif
-      std::cout << "@@@@@@ Global best: ";
-      std::cout << best_fitness_ << " [ ";
-      for(int j = 0; j < num_params_; ++ j)
-        std::cout << params_[j] << ": " << best_values_[j] << " ";
+      std::cout << "@@@ Global best: " << best_fitness_ << " [ ";
+      for(int j = 0; j < num_params_; ++ j) std::cout << params_[j] << ": " << best_values_[j] << " ";
       std::cout << "]" << std::endl;
     #ifdef USE_MPI
     } // if

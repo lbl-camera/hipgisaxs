@@ -1,33 +1,32 @@
 # HipGISAXS: QUICK STARTER GUIDE #
-Bug (what bug..?) reporting: Email: `asarje@lbl.gov`
+Bug (what bug...?) reporting: Email: `asarje@lbl.gov`
 
 ## TABLE OF CONTENTS ##
-  1. LICENSING
-  2. SUPPORTED PLATFORMS
+  1. Licensing
+  2. Supported Platforms
     1. Operating System Platforms
     2. System Hardware (Compute Environment)
     3. System Hardware (Processor Architectures)
-  3. SOFTWARE PRE-REQUISITES
-  4. HipGISAXS DIRECTORY LAYOUT
-  5. TO BUILD THE APPLICATION AND LIBRARY
-  6. TO USE THE HIPGISAXS LIBRARY IN YOUR OWN APPLICATION
-  7. TO RUN THE APPLICATION
-    1. Interactively on Dirac (NERSC)
-    2. Submit batch job for multiple GPU nodes on Dirac (NERSC)
-    3. Interactively on a generic Linux machine equipped with GPU
-  8. INPUTS
-  9. APPENDIX
-    1. SPECIAL BUILD INSTRUCTIONS FOR SPECIFIC SYSTEMS
-      1. On Carver/Dirac at NERSC
-      2. On Hopper/Edison at NERSC
-      3. On Titan at OLCF
-      4. On Stampede at TACC
-      5. On Mira at ALCF
-      6. On a generic Linux system
-      7. For certain users, on ALS GPU servers
+  3. Software Pre-requisites
+  4. HipGISAXS Directory Layout
+  5. Building the Binary and Library
+  6. Running the Binary
+  7. Inputs
+  8. Using the Library in an Application
+  9. Appendix
+    1. Special System Specific Build Instructions
+      1. On a generic Linux (x86-64) system
+      2. [NERSC](http://www.nersc.gov) Systems
+        1. Edison (Cray XC30, Intel Ivy Bridge)
+        2. Cori Phase 1 (Cray XC40, Intel Haswell)
+      3. [OLCF](https://www.olcf.ornl.gov) Systems
+        1. Titan (Cray XK7)
+      4. For users on Andromeda/Bragg servers
+    2. Installing Software Dependencies
+      1. TIFF Library
 
 
-## LICENSING ##
+## Licensing ##
 The HipGISAXS software is only available to be downloaded and used by employees
 of academic research institutions, not-for-profit research laboratories, or
 governmental research facilities. Please read the accompanying LICENSE file
@@ -36,87 +35,85 @@ to be bound by the terms of this Non-Commercial End User License Agreement.
 This licensing information is also provided as a PDF file along with the documentation.
 
 
-## SUPPORTED PLATFORMS
-HipGISAXS has been tested on, and supports, the following.
+## Supported Platforms
+HipGISAXS has been successfully tested on the following platforms.
 
-### A. Operating System Platforms
-1. GNU/Linux x86\_64: Ubuntu, Red Hat Linux, SUSE Linux, Cray Linux Environment (XT5, XE5, XK7, XE6, XC30).
-2. Darwin x86\_64: Mac OS X (Lion, Mountain Lion).
-3. You could try HipGISAXS on any UNIX based OS, but it may or may not be supported.  
-   Please let us know about your platform (except Windows!) so that we can include it in our list.
+### A. Operating System Platforms (Software Environment)
+1. GNU/Linux x86\_64: Ubuntu, Red Hat Linux, SUSE Linux, Cray Linux Environment (XK7, XE6, XC30, XC40).
+2. Darwin x86\_64: Mac OS X (El Capitan, Yosemite).
+3. You could try HipGISAXS on any UNIX based OS: generally it should work.
+4. Windows: Will probably be supported in future.
 
 ### B. System Hardware (Compute Environment)
-1. Clusters/Supercomputers equipped with Nvidia GPUs as accelerators on each node when using the GPU version.
-2. Generic desktop equipped with an Nvidia GPU when using the GPU version.
-3. Clusters/Supercomputers equipped with Intel Phi coprocessors on each node when using MIC version.
-4. Any Intel CPU equipped with Intel Phi coprocessor when using MIC version.
-5. Any generic CPU (multi-cores), without accelerators.
+1. Generic x86 laptop/desktop/server.
+2. Clusters/Supercomputers based on x86 processors.
+3. Generic x86 laptop/desktop/server equipped with Nvidia GPUs.
+4. Clusters/Supercomputers equipped with Nvidia GPUs as accelerators on each node.
 
 ### C. System Hardware (Processor Architectures)
-1. Intel/AMD processors (including multi-cores).
-   We have not extensively tested on various types of processors yet.
-2. Fermi or Kepler architecture based Nvidia GPUs.
-   Compute capability of these GPUs >= 2.0.
-3. Intel MIC architecture based Intel Phi coprocessors.
-   Requires intel compilers, version >= 13.1.0.146.
+1. Intel/AMD processors (64-bit).
+2. Nvidia GPUs with compute capability >= 2.0.
+3. Intel MIC architecture: support under development.
 
 
-## SOFTWARE PRE-REQUISITES
+## Software Pre-requisites
 This software uses several third-party libraries, and they need to be installed and available in order to compile and run HipGISAXS.
 For ease, if possible use the installations already available on your system, if any. Alternatively, download and install them yourself.
 The following are the dependencies of this software:
 
-1. **GNU C/C++ compilers**, version >= 4.3 and <= 4.7 (4.6 recommended), OR **Intel C/C++ compilers**, version >= 13.1.0.146.  
-   To compile with GPU support enabled, use GNU compilers.  
-   Intel compilers are necessary to enable Intel MIC version of HipGISAXS. Other versions of compilers may be used, but they have not been tested. Intel compilers will work best with GNU compatibility 4.6.
-2. **Nvidia CUDA toolkit** version > 4.x. (>= 5.5 recommended).  
-   CUDA can be obtained from: http://developer.nvidia.com/cuda/cuda-downloads  
-   *NOTE: CUDA is NOT required if compiling for CPU-only or MIC versions.*
-3. **OpenMPI** compiled with GNU or Intel compilers which ever you are using to compile HipGISAXS. Version > 1.4.4.  
-   OpenMPI can be obtained from: http://www.open-mpi.org/software
-   *NOTE: Currently, even if you do not plan to use MPI, the compilation process still needs MPI.
-   		 This requirement will be removed in future.*  
-   Alternative implementations of MPI may also be used, such as MPICH2 and MVAPICH.
-4. **Boost** and **numeric extension to Boost GIL**.  
-   Boost can be obtained from: http://www.boost.org  
-   Numeric extension to Boost GIL can be obtained from the following (file name `numeric.zip`):  
-     http://sourceforge.net/adobe/genimglib/wiki/Downloads  
-     http://gil-contributions.googlecode.com/svn/trunk  
-   After downloading, unzip the file, generating a directory named `numeric`.  
-   Copy this directory under `boost/gil/extensions/` at your Boost installation location. If you do not have permissions to do that, you can specify an additional path to this library during the install process.
-5. **Parallel HDF5 library**.  
-   HDF5 can be obtained from: http://www.hdfgroup.org/downloads  
+### Required Software
+1. **GNU C/C++ compilers**, version >= 4.7, OR  
+   **Intel C/C++ compilers**, version >= 15 (with GNU compatibility >= 4.7).  
+   To compile with GPU support enabled, it is recommended to use GNU compilers. 
+2. **Scons**, version >= 2.0.  
+   Scons can be obtained from: [http://scons.org](http://scons.org)  
+   *NOTE: Scons is based on Python, so you need to have Python installed too.*
+3. **Boost C++ Libraries**.  
+   Boost can be obtained from: [http://www.boost.org](http://www.boost.org)  
+4. **Tiff Library** (libtiff).  
+   Tiff library can be obtained from: [http://remotesensing.org/libtiff](http://remotesensing.org/libtiff)  
+   *NOTE: `libtiff` should be built with C++ support enabled. Also, disable `jpeg` support unless you have JPEG libraries installed. Brief instructions on building `libtiff` are given in the appendix.*
+
+### Optional Software
+1. **Nvidia CUDA toolkit** version >= 6.0.  
+   CUDA can be obtained from [Nvidia CUDA downloads](http://developer.nvidia.com/cuda/cuda-downloads)  
+   *NOTE: CUDA required to enable GPU support.*  
+   *NOTE: CUDA is NOT required if compiling for CPU-only version.*
+2. **OpenMPI** compiled with GNU or Intel compilers which ever you are using to compile HipGISAXS. Version > 1.4.4.  
+   OpenMPI can be obtained from its [website](http://www.open-mpi.org/software)  
+   Alternative implementations of MPI may also be used, such as MPICH and MVAPICH.  
+   *NOTE: MPI library is required to enable support for multi-node systems.*  
+   *NOTE: MPI library is NOT required if compiling for single node/server/desktop/laptop.*
+3. **Parallel HDF5 library**.  
+   HDF5 can be obtained from the [HDF5 group website](http://www.hdfgroup.org/downloads)  
+   *NOTE: HDF5 library is NOT required if you do not plan to use input files in this format.*  
    *NOTE: HDF5 depends on the zlib and szip libraries.*  
-   **zlib** can be obtained from: http://www.zlib.net  
-   **szip** can be obtained from: http://www.hdfgroup.org/doc\_resource/SZIP  
-6. **Tiff Library** (libtiff).  
-   Tiff library can be obtained from: http://www.libtiff.org
-7. **Scons** version >= 2.0, for installation.  
-   It can be obtained from http://www.scons.org  
-   *NOTE: Scons is based on the Python language, so you need to have Python installed too.*
+   **zlib** can be obtained from: [http://www.zlib.net](http://www.zlib.net)  
+   **szip** can be obtained from: [http://www.hdfgroup.org/doc\_resource/SZIP](http://www.hdfgroup.org/doc\_resource/SZIP)  
 
 
-## HipGISAXS DIRECTORY LAYOUT
+## HipGISAXS Directory Layout
 
-    hipgisaxs
-    |- README     : Duh!
+    HipGISAXS
+    |- README.md  : Duh!
     |- LICENSE    : This contains all the licensing information for HipGISAXS.
     |- SConstruct : Scons file for installation.
     |- SConscript : Scons file for installation.
     |- bin        : This contains HipGISAXS binaries generated by compilation.
     |- build      : A few Makefiles for various systems are provided in this.
-    |- data       : This provides some sample input shape definition files in HDF5 format.
-    |- doc        : This contains detailed documentation of HipGISAXS.
-    |- inputs     : This gives some sample input files to HipGISAXS program in HiG format.
+    |- data       : This provides some sample input shape definition files.
+    |- doc        : This will contain detailed documentation of HipGISAXS.
+    |- examples   : This contains some example input files in HiG format.
+    |- extras     : This contains some extra stuff such as syntax highlighting config for Vim.
+    |- include    : All the source headers are within this directory. It contains subdirectories.
     |- lib        : The HipGISAXS library, libhipgisaxs.a, is generated here.
     |- man        : This has the man pages.
     |- obj        : All the object files generated during build are stored here.
-    |- samples    : This contains some compilable samples on how to use the HipGISAXS library.
-    |- src        : This is the main source directory containing the whole code.
-                      It contains many subdirectories.
+    |- samples    : This contains some samples on how to use the HipGISAXS library.
+    |- src        : This is the main source code directory. It contains many subdirectories.
 
 
-## TO BUILD HIPGISAXS BINARY AND LIBRARY
+## Building the Binary and Library
 To build the HipGISAXS application binary and static library, use `scons`. Make sure you are passing paths to all the dependencies through `--extrapath=` option of scons:
 
     $ scons --extrapath=<path1>,<path2>,<etc>
@@ -140,108 +137,19 @@ The generated static library, `libhipgisaxs.a`, will be located in the `lib` dir
 
 NOTE: See Appendix at the end of this file for more detailed and customized building information.
 
-
-## TO USE THE HIPGISAXS LIBRARY IN YOUR OWN APPLICATION
-   Please refer to the examples provided in the `samples` directory.
-   It contains simple code which uses the HipGISAXS library.
-   The corresponsing Makefile is also provided as a reference.
-
-
-## TO RUN HIPGISAXS
-   
-### A. On a Linux/OS X machine with or without GPU
+## Running the Binary
 1. Make sure all the paths (data, output) and other variables are correctly set in the input HiG file.
 2. Execute the binary with the input file as an argument. For example,  
-   ```
-   $ ./bin/hipgisaxs inputs/01-cylinder.hig
-   ```
-
-### B. Interactively on the Dirac system at NERSC
-1. Unload the default PGI modules:  
 
    ```
-   $ module unload pgi openmpi
-   ```
-2. Load the required modules:  
-
-   ```
-   $ module load openmpi-gnu gcc/4.5.2 cuda/4.2  
-   $ module load szip zlib  
-   $ module load hdf5-parallel/1.8.3-gnu  
-   ```
-3. Request an interactive GPU node:  
-
-   ```
-   $ qsub -I -V -q dirac_int -l nodes=1:ppn=8:fermi
-   ```
-4. Make sure loaded modules are correct. By default, PGI version of openMPI might be loaded, and needs to be unloaded:  
-
-   ```
-   $ module unload openmpi
-   ```
-5. Move to the work directory:  
-
-   ```
-   $ cd $PBS_O_WORKDIR
-   ```
-6. Execute on a single node:  
-
-   ```
-   $ ./bin/hipgisaxs inputs/01-cylinder.hig  
+     $ ./bin/hipgisaxs examples/01-pyramid.hig
    ```
 
-   NOTE: For details on running interactive jobs on Dirac, please refer to:
-    http://www.nersc.gov/users/computational-systems/dirac/running-jobs/interactive
-
-### C. Submit batch job to use multiple GPU nodes on the Dirac system at NERSC
-1. Create a job script. Example of such a file:  
-   ```
-   $ cat script.pbs
-
-   #PBS -q dirac_special
-   #PBS -l nodes=12:ppn=1:fermi
-   #PBS -l walltime=03:00:00
-   #PBS -A gpgpu
-   #PBS -N opv_new1.12
-   #PBS -e opv_new1.12.$PBS_JOBID.err
-   #PBS -o opv_new1.12.$PBS_JOBID.out
-   #PBS -V
-
-   cd $PBS_O_WORKDIR
-
-   module unload pgi openmpi
-   module load openmpi-gnu/1.4.5 gcc/4.5.4 cuda/4.2
-   module load szip zlib
-   module load hdf5-parallel/1.8.3-gnu
-
-   export PATH=/global/homes/a/asarje/local/tiff-4.0.2/bin:$PATH
-   export LD_LIBRARY_PATH=/global/homes/a/asarje/local/tiff-4.0.2/lib:$LD_LIBRARY_PATH
-
-   mpirun -np 4 ./bin/hipgisaxs inputs/10-flexrod.hig
-   ```
-2. In the submission script, make sure the modules are loaded correctly (see example above.)
-   For the execution command, use:
-
-   ```
-   mpirun -np <nodes> ./bin/hipgisaxs <input-file-in-HiG>  
-   ```
-   where, `<nodes>` is number of GPU nodes to use.
- 
-3. Submit the job script to the queue:
-
-   ```
-   $ qsub script.pbs
-   ```
-
-4. For detailed information on writing and submitting job scripts on Dirac, please refer to:
-    http://www.nersc.gov/users/computational-systems/dirac/running-jobs/batch
-
-
-## INPUTS
+## Inputs
 The HipGISAXS binary takes as input a file in HiG format.
-Please refer to detailed HipGISAXS documentation for details of the HiG format.
-A few sample input files are located in the directory "inputs", with extensions ".hig".
-Update the input file as needed.
+Please refer to detailed HipGISAXS documentation for details of the HiG format. Detailed information on the inputs is available at https://webhipgisaxs.lbl.gov  
+A few sample input files are located in the directory `examples`, with extensions `.hig`.
+Update the input files as needed.   
 The main components in the input file to update are the following:
 
 1. Shape name defines the input filename containing triangulated shape data.
@@ -250,7 +158,7 @@ The main components in the input file to update are the following:
        ...
        shape = {
     	   ...
-    	   name = "data/Shape_27.hd5"
+    	   name = "data/flexrod.obj"
        } ...
    ```
    This file needs to be either in HDF5 format or the OBJ format.  
@@ -262,20 +170,20 @@ The main components in the input file to update are the following:
       computation = {
     	  ...
     	  pathprefix = ".",
-    	  runname = "27",
+    	  runname = "myflexrod",
     	  ...
       } ...
    ```
    The `pathprefix` is a relative path to a directory.  
    The `runname` is appended with a timestamp, and a directory by this resulting name is created in the directory specified by `pathprefix`.  
-   All generated output files are stored in this generated directory.  
+   All output files are stored in this generated directory.  
 
 3. Resolution alters the final image resolution, and also affects the run time:
    ```
       ...
       computation = {
     	  ...
-    	  resolution = [ 0.5 0.5 ],
+    	  resolution = [ 1000 500 ],
     	  ...
       } ...
    ```
@@ -283,84 +191,99 @@ The main components in the input file to update are the following:
    Modify the provided input file templates as needed.
 
 
-# APPENDIX
+## Using the Library in an Application
+   Please refer to the examples provided in the `samples` directory.
+   It contains simple code which uses the HipGISAXS library.
+   The corresponsing Makefile is also provided as a reference.
 
-## SPECIAL BUILD INSTRUCTIONS FOR SPECIFIC SYSTEMS (STALE INFO, TO BE UPDATED SOON)
 
-### A. On Carver/Dirac at NERSC
-1. Some makefiles for different systems are included in the directory "build".
-   Replace the current "Makefile" with the one for Carver/Dirac (and name it as "Makefile"):
-    $ cp build/Makefile.dirac Makefile
-2. Unload the default PGI modules:
-    $ module unload pgi openmpi
-3. Load the required modules:
-    $ module load openmpi-gnu gcc/4.5.2 cuda
-    $ module load szip zlib
-    $ module load hdf5-parallel/1.8.3-gnu
-4. The Boost module available on Carver does NOT contain the GIL numeric extension.
-   Please install and use your own copy.
-5. Edit Makefile to specify the correct paths ("base directories" section) to the various libraries.
-   Example:
-    $ cat Makefile
-    ...
-    ## base directories
-    BOOST_DIR = /global/homes/a/asarje/local/boost_1_49_0
-    MPI_DIR = 
-    CUDA_DIR = /usr/common/usg/cuda/5.0
-    HDF5_DIR = /global/homes/a/asarje/local/hdf5-1.8.8-gnu/parallel
-    TIFF_DIR = /global/homes/a/asarje/local/tiff-4.0.2
-    Z_DIR = $(ZLIB_DIR)     # an environment variable set by loading zlib module
-    SZ_DIR = $(SZIP_DIR)    # an environment variable set by loading szip module
-    ...
-6. Build the code from within the code directory:
-    $ make clean
-    $ make [or, make library]
-   This will generate the binary in directory "bin".
-   When building the library, it will be generated into the "lib" directory.
-   All the intermediate generated object files are in the directory "obj". They can be removed if wanted.
+## Appendix
 
-### B. On Hopper/Edison at NERSC
-   Instructions coming soon. Meanwhile go try yourself!
+### Special System Specific Build Instructions
 
-### C. On Titan at OLCF
-   Instructions coming soon. Meanwhile go try yourself!
+#### A. On a generic Linux (x86-64) system
+1. Ensure all above prerequisites are available on the system.
+2. Ensure all system environment variables are set accordingly to include the prerequisites.
+3. Once all the required software are available, use the `scons` command to build the binary. Example:  
+   ```
+      $ scons --extrapath=$PATHS_TO_SOFTWARE --with-mpi --with-cuda
+   ```
 
-### D. On Stampede at TACC
-   Instructions coming soon. Meanwhile go try yourself!
+4. On successful build, the binary will be generated in the `bin` directory, called `hipgisaxs`.
 
-### E. On Mira at ALCF
-   Instructions coming soon. Meanwhile go try yourself!
+#### B. [NERSC](http://www.nersc.gov) Systems
 
-### F. On a generic Linux system
-1. Make sure all above prerequisites are available.
-2. Make sure all system environment variables are set accordingly to include the prerequisites.
-3. Set all paths correctly in the sample Makefile, and edit as needed (as above).
-4. Build the library from within the code directory:
-    $ make clean
-    $ make library
+##### Edison (Cray XC30, Intel Ivy Bridge)
+1. All required software, except `libtiff` are available as modules on Edison. An example set of modules you can load are given in the `build/modules.edison` file. You could just `source` this file:  
+   ```
+      $ source build/modules.edison
+   ```
 
-### G. For certain users, on saxs-waxs-gpu/saxs-waxs-gpu2/andromeda servers
-1. Replace the current "Makefile" with the one for saxs-waxs-gpu (and name it as "Makefile"):
-    $ cp build/Makefile.saxs1 Makefile		OR
-    $ cp build/Makefile.saxs2 Makefile		OR
-    $ cp build/Makefile.andromeda Makefile
-2. All "base directories" in the provided Makefile are set to the correct locations.
-   If you want to use your own installation of any of the required softwares, please edit its corresponding entry in the Makefile.
-   Example:
-    $ cat Makefile
-    ...
-    ## base directories
-    BOOST_DIR = /usr/local/boost_1_45_0
-    MPI_DIR = /usr/local
-    CUDA_DIR = /usr/local/cuda
-    HDF5_DIR = /home/asarje/local/hdf5-1.8.8-gnu/parallel
-    Z_DIR = /root/zlib-1.2.7
-    SZ_DIR = /root/szip-2.1
-    TIFF_LIB_DIR = /usr/local
-    ...
-3. Build the code from within the code's main directory:
-    $ make clean
-    $ make [or, make library]
-   This will generate the binary in directory "bin".
-   When building the library, it will be generated into the "lib" directory.
-   All the generated object files are in the directory "obj".
+2. You will need to install `libtiff`. Please refer to the required software section above.
+3. An example build command is given in the `build/build-edison.sh`. If needed, make sure the paths are correctly set, including your installation of `libtiff`. Since Edison requires cross compilation for its compute nodes, make sure the `CC` and `CXX` environment variables are also set. Example:  
+   ```
+      $ CC=cc CXX=CC scons --with-mpi --extrapath=$BOOST_ROOT,$TIFFDIR
+   ```
+
+*NOTE: For those users who are member of the 'als' group at NERSC, an installation of `libtiff` is available under `/project/projectdirs/als/local/tiff-4.0.6`.*
+4. On successful build, the binary will be generated in the `bin` directory, called `hipgisaxs`.
+
+##### Cori Phase 1 (Cray XC40, Intel Haswell)
+1. All required software, except `libtiff` are available as modules on Cori. An example set of modules you can load are given in the `build/modules.cori` file. You could just `source` this file:  
+   ```
+      $ source build/modules.cori
+   ```
+
+2. You will need to install `libtiff`. Please refer to the required software section above.
+3. Build command is same as for the Edison system (see above), given in the `build/build-edison.sh`. If needed, make sure the paths are correctly set, including your installation of `libtiff`. Since Cori requires cross compilation for its compute nodes, make sure the `CC` and `CXX` environment variables are also set. Example:
+
+    ```
+      $ CC=cc CXX=CC scons --with-mpi --extrapath=$BOOST_ROOT,$TIFFDIR
+    ```
+
+*NOTE: For those users who are member of the `als` group at NERSC, an installation of `libtiff` is available under `/project/projectdirs/als/local/tiff-4.0.6`.*
+4. On successful build, the binary will be generated in the `bin` directory, called `hipgisaxs`.
+
+#### C. [OLCF](https://www.olcf.ornl.gov) Systems
+
+##### 1. Titan (Cray XK7)
+1. All required software as modules on Titan, except `libtiff` which is already installed systemwide. An example set of modules you can load are given in the `build/modules.titan` file. You could just `source` this file:  
+   ```
+      $ source build/modules.titan
+   ```
+
+2. An example build command is given in the `build/build-titan.sh`. If needed, make sure the paths are correctly set. Since Titan requires cross compilation for its compute nodes, make sure the `CC` and `CXX` environment variables are also set. Example:  
+   ```
+      $ CUDA_TOOLKIT_PATH=$CRAY_CUDATOOLKIT_DIR CXX=CC CC=cc scons --with-mpi --with-cuda --extrapath=$BOOST_DIR
+   ```
+
+4. On successful build, the binary will be generated in the `bin` directory, called `hipgisaxs`.
+
+#### D. For users on Andromeda/Bragg servers
+
+1. All the required softwares are already available on these systems. If you want to use your own installation of any of the required softwares, make sure you use its corresponding paths in the following.
+2. An example build command is given in the `build/build-bragg.sh` or `build/build-andromeda.sh`. If needed, make sure the paths are correctly set.
+3. Once all the required software are available, use the `scons` command to build the binary. Example:  
+    ```
+      $ scons --extrapath=/usr/local/cuda --with-mpi --with-cuda
+    ```
+
+4. On successful build, the binary will be generated in the `bin` directory, called `hipgisaxs`.
+
+### Installing Software Dependencies
+
+#### A. TIFF library
+
+1. The source for the TIFF library can be obtained from http://remotesensing.org/libtiff.
+2. Use the `configure` script to generate the required build files. C++ support should be enabled. Additionally, disable JPEG support unless you are willing to install JPEG libraries as well. Example:    
+    ```
+      $ ./configure --prefix=<my_install_path> --disable-zlib --disable-jpeg --enable-cxx
+    ```
+3. Compile the source with `make`:  
+    ```
+      $ make
+    ```
+4. Install the library at your specified path `<my_install_path>`:  
+    ```
+      $ make install
+    ```
