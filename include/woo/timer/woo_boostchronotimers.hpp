@@ -9,6 +9,7 @@
 
 #include "wootimers.hpp"
 #include <boost/chrono.hpp>
+#include <iostream>
 
 #ifndef _WOOBOOSTCHRONOTIMERS_HPP_
 #define _WOOBOOSTCHRONOTIMERS_HPP_

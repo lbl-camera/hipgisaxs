@@ -40,8 +40,8 @@ namespace hig {
       real_t dist_[2];
       real_t sdev_[2];
       real_t domsize_;
-      Paracrystal(const Paracrystal &){}
-      Paracrystal& operator= (const Paracrystal &){}
+      Paracrystal(const Paracrystal &) = delete;
+      Paracrystal& operator= (const Paracrystal &) = delete;
     public:
       Paracrystal() : dims_(1) {};
 
@@ -67,8 +67,8 @@ namespace hig {
       int dims_;
       real_t dia_;
       real_t volf_;
-      PercusYevick(const PercusYevick &){}
-      PercusYevick& operator= (const PercusYevick &){}
+      PercusYevick(const PercusYevick &) = delete;
+      PercusYevick& operator= (const PercusYevick &) = delete;
 
     public:
       PercusYevick() : dims_(2) {}
