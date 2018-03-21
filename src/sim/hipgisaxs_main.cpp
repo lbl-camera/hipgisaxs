@@ -35,6 +35,7 @@
 #include <numerics/matrix.hpp>
 #include <numerics/numeric_utils.hpp>
 #include <file/edf_reader.hpp>
+#include <config/yaml_input.hpp>
 
 #if defined USE_GPU || defined FF_ANA_GPU || defined FF_NUM_GPU
   #include <init/gpu/init_gpu.cuh>
@@ -88,13 +89,8 @@ namespace hig {
       input_ = new HiGInput();
       err = input_->construct_input_config(filename);
     } else if ((path.find(".yaml") != std::string::npos ) || (path.find(".yml") != std::string::npos)) {
-      #ifdef YAML
-        input_ = new YAMLInput();
-        err = input_->construct_input_config(filename);
-      #else
-        std::cerr << "error: HipGISAXS was built without YAML support" << std::endl;
-        return false;
-      #endif
+      input_ = new YAMLInput();
+      err = input_->construct_input_config(filename);
     } else {
       std::cerr << "error: unrecogonizable files extension" << std::endl;
       return false;
