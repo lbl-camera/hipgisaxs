@@ -125,7 +125,7 @@ namespace hig {
     sim_comm_ = root_comm_;
 
     if(master) {
-      std::cout << std::endl
+      std::cerr << std::endl
           << "*******************************************************************" << std::endl
           << "************************* HipGISAXS 1.0 ***************************" << std::endl
           << "*******************************************************************" << std::endl
@@ -149,7 +149,7 @@ namespace hig {
       return false;
     } // if-else
 
-    if(master) std::cout << "**                    Wavelength: " << lambda << std::endl;
+    if(master) std::cerr << "**                    Wavelength: " << lambda << std::endl;
 
     k0_ = 2 * PI_ / lambda;
 
@@ -192,20 +192,20 @@ namespace hig {
 
     #ifdef _OPENMP
       if(master)
-        std::cout << "++      Number of OpenMP threads: "
+        std::cerr << "++      Number of OpenMP threads: "
               << omp_get_max_threads() << std::endl;
     #endif
 
     #if defined USE_GPU || defined FF_ANA_GPU || defined FF_NUM_GPU
-      if(master) std::cout << "-- Waking up GPU(s) ..." << std::flush;
+      if(master) std::cerr << "-- Waking up GPU(s) ..." << std::flush;
       init_gpu();
-      if(master) std::cout << " it woke up!" << std::endl;
+      if(master) std::cerr << " it woke up!" << std::endl;
     #elif defined USE_MIC
-      if(master) std::cout << "-- Waking up MIC(s) ..." << std::flush;
+      if(master) std::cerr << "-- Waking up MIC(s) ..." << std::flush;
       init_mic();
-      if(master) std::cout << " done." << std::endl;
+      if(master) std::cerr << " done." << std::endl;
     #else
-      if(master) std::cout << "-- Not set up to use any accelerator!" << std::endl;
+      if(master) std::cerr << "-- Not set up to use any accelerator!" << std::endl;
     #endif
 
     return true;
@@ -308,7 +308,7 @@ namespace hig {
     else num_tilt = (tilt_max - tilt_min) / tilt_step + 1;
 
     if(master) {
-      std::cout << "**                  Num alphai: " << num_alphai << std::endl
+      std::cerr << "**                  Num alphai: " << num_alphai << std::endl
             << "**                     Num phi: " << num_phi << std::endl
             << "**                    Num tilt: " << num_tilt << std::endl;
     } // if
@@ -414,7 +414,7 @@ namespace hig {
           real_t tilt_rad = tilt * PI_ / 180;
 
           if(tmaster) {
-            std::cout << "-- Computing GISAXS "
+            std::cerr << "-- Computing GISAXS "
                   << i * num_phi * num_tilt + j * num_tilt + k + 1 << " / "
                   << num_alphai * num_phi * num_tilt
                   << " [alphai = " << alpha_i << ", phi = " << phi
@@ -436,10 +436,10 @@ namespace hig {
 
           #ifdef FILEIO
           if(tmaster) {
-            std::cout << "-- Constructing GISAXS image ... " << std::flush;
+            std::cerr << "-- Constructing GISAXS image ... " << std::flush;
             Image img(ncol_, nrow_, input_->compute().palette());
             img.construct_image(final_data, 0); // merge this into the contructor ...
-            std::cout << "done." << std::endl;
+            std::cerr << "done." << std::endl;
 
             if(x_max < x_min) x_max = x_min;
             // define output filename
@@ -452,20 +452,20 @@ namespace hig {
                       "/img_ai=" + alphai_s + "_rot=" + phi_s +
                       "_tilt=" + tilt_s + ".tif");
 
-            std::cout << "**                    Image size: " << ncol_  << " x " << nrow_
+            std::cerr << "**                    Image size: " << ncol_  << " x " << nrow_
                   << std::endl;
-            std::cout << "-- Saving image in " << output << " ... " << std::flush;
+            std::cerr << "-- Saving image in " << output << " ... " << std::flush;
             img.save(output);
-            std::cout << "done." << std::endl;
+            std::cerr << "done." << std::endl;
 
             // save the actual data into a file also
             std::string data_file(output_subdir_ + 
                     "/gisaxs_ai=" + alphai_s + "_rot=" + phi_s +
                     "_tilt=" + tilt_s + ".out");
-            std::cout << "-- Saving raw data in " << data_file << " ... "
+            std::cerr << "-- Saving raw data in " << data_file << " ... "
                 << std::flush;
             save_gisaxs(final_data, data_file);
-            std::cout << "done." << std::endl;
+            std::cerr << "done." << std::endl;
           } // if
           #else
             for (int i = 0; i < nrow_;  i++){
@@ -585,16 +585,16 @@ namespace hig {
           alphai_b << alpha_i; alphai_s = alphai_b.str();
           std::string output(output_subdir_ + 
                     "/img_ai=" + alphai_s + "_averaged.tif");
-          std::cout << "-- Saving averaged image in " << output << " ... " << std::flush;
+          std::cerr << "-- Saving averaged image in " << output << " ... " << std::flush;
           img.save(output);
-          std::cout << "done." << std::endl;
+          std::cerr << "done." << std::endl;
 
           // save the actual data into a file also
           std::string data_file(output_subdir_ + 
                   "/gisaxs_ai=" + alphai_s + "_averaged.out");
-          std::cout << "-- Saving averaged raw data in " << data_file << " ... " << std::flush;
+          std::cerr << "-- Saving averaged raw data in " << data_file << " ... " << std::flush;
           save_gisaxs(averaged_data, data_file);
-          std::cout << "done." << std::endl;
+          std::cerr << "done." << std::endl;
 
           delete[] averaged_data;
         } // if
@@ -608,7 +608,7 @@ namespace hig {
 
     sim_timer.stop();
     if(master) {
-      std::cout << "**         Total simulation time: " << sim_timer.elapsed_msec() << " ms."
+      std::cerr << "**         Total simulation time: " << sim_timer.elapsed_msec() << " ms."
             << std::endl;
     } // if
 
@@ -659,7 +659,7 @@ namespace hig {
     real_t phi_rad = phi_min * PI_ / 180;
     real_t tilt_rad = tilt_min * PI_ / 180;
     #if VERBOSE_LEVEL > VERBOSE_LEVEL_ZERO
-    if(master) std::cout << "-- Computing GISAXS ... " << std::endl << std::flush;
+    if(master) std::cerr << "-- Computing GISAXS ... " << std::endl << std::flush;
     #endif
     /* run a gisaxs simulation */
     if(!run_gisaxs(alpha_i, alphai, phi_rad, tilt_rad, final_data,
@@ -673,7 +673,7 @@ namespace hig {
     sim_timer.stop();
     #if VERBOSE_LEVEL > VERBOSE_LEVEL_ZERO
     if(master)
-      std::cout << "**        Total Simulation time: " << sim_timer.elapsed_msec()
+      std::cerr << "**        Total Simulation time: " << sim_timer.elapsed_msec()
             << " ms." << std::endl;
     #endif
 
@@ -763,7 +763,7 @@ namespace hig {
 
       #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
       if(smaster) {
-        std::cout << "-- Processing structure " << s_num + 1 << " ..." << std::endl;
+        std::cerr << "-- Processing structure " << s_num + 1 << " ..." << std::endl;
       } // if
       #endif
 
@@ -809,7 +809,7 @@ namespace hig {
 
       #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
       if(smaster) {
-        std::cout << "-- Grains: " << num_grains << std::endl;
+        std::cerr << "-- Grains: " << num_grains << std::endl;
       } // if
       #endif
 
@@ -922,7 +922,7 @@ namespace hig {
 
         #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
         if(gmaster) {
-          std::cout << "-- Processing grain " << grain_i + 1 << " / " << num_grains << " ..."
+          std::cerr << "-- Processing grain " << grain_i + 1 << " / " << num_grains << " ..."
                     << std::endl;
         } // if
         #endif
@@ -1015,7 +1015,7 @@ namespace hig {
         fftimer.stop();
         #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
         #ifndef FF_VERBOSE
-          std::cout << "**               FF compute time: "
+          std::cerr << "**               FF compute time: "
                     << fftimer.elapsed_msec() << " ms." << std::endl;
         #endif
         #endif
@@ -1048,7 +1048,7 @@ namespace hig {
 
           #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
           #ifdef SF_VERBOSE
-          std::cout << "-- Distribution sample " << i_scale + 1 << " / "
+          std::cerr << "-- Distribution sample " << i_scale + 1 << " / "
               << scaling_samples.size() << ".\n";
            #endif
            #endif
@@ -1124,10 +1124,10 @@ namespace hig {
         sftimer.stop();
         #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
         #ifndef SF_VERBOSE
-          std::cout << "**               SF compute time: "
+          std::cerr << "**               SF compute time: "
                     << sftimer.elapsed_msec() << " ms." << std::endl;
         #else
-          std::cout << sftimer.elapsed_msec() << " ms." << std::endl;
+          std::cerr << sftimer.elapsed_msec() << " ms." << std::endl;
         #endif
         #endif
 
@@ -1412,7 +1412,7 @@ namespace hig {
       if(sigma > TINY_) {
         woo::BoostChronoTimer smear_timer;
         #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
-        std::cout << "-- Smearing the result with sigma = " << sigma << " ... " << std::flush;
+        std::cerr << "-- Smearing the result with sigma = " << sigma << " ... " << std::flush;
         #endif
         if(img3d == NULL) {
           std::cerr << "error: there is no img3d. you are so in the dumps!" << std::endl;
@@ -1421,8 +1421,8 @@ namespace hig {
         gaussian_smearing(img3d, sigma);
         smear_timer.stop();
         #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
-        std::cout << "done." << std::endl;
-        std::cout << "**                 Smearing time: "
+        std::cerr << "done." << std::endl;
+        std::cerr << "**                 Smearing time: "
                   << smear_timer.elapsed_msec() << " ms." << std::endl;
         #endif
       } // if
@@ -2228,10 +2228,10 @@ namespace hig {
 
   bool HipGISAXS::update_params(const map_t& params) {
     #if VERBOSE_LEVEL > VERBOSE_LEVEL_ONE
-    std::cout << "** Updating HipGISAXS parameters: ";
+    std::cerr << "** Updating HipGISAXS parameters: ";
     for(map_t::const_iterator i = params.begin(); i != params.end(); ++ i)
-      std::cout << (*i).first << " = " << (*i).second << "\t";
-    std::cout << std::endl;
+      std::cerr << (*i).first << " = " << (*i).second << "\t";
+    std::cerr << std::endl;
     //HiGInput::instance().print_all();
     #endif
     //return HiGInput::instance().update_params(params);
