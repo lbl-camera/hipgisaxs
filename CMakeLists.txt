@@ -35,7 +35,7 @@ ENDIF()
 FIND_PACKAGE(yaml-cpp REQUIRED)
 IF (yaml-cpp_FOUND)
     INCLUDE_DIRECTORIES(${yaml-cpp_INCLUDE_DIR})
-    SET(LIBS ${LIBS} ${yaml-cpp_LIBRARY})
+    SET(LIBS ${LIBS} -lyaml-cpp)
 ENDIF (yaml-cpp_FOUND)
 
 # FFTW Library
