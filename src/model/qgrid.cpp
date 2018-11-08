@@ -108,8 +108,8 @@ namespace hig {
 
     // incoming vectors
     real_t sin_ai = std::sin(alpha_i);
-    real_t kzi_0 = -1 * k0 * sin_ai;
-    complex_t kzi = -1 * k0 * std::sqrt(sin_ai * sin_ai - dnl_q);
+    real_t kzi_0 =  k0 * sin_ai;
+    complex_t kzi = k0 * std::sqrt(sin_ai * sin_ai - dnl_q);
 
     std::vector<complex_t> kzf;
     for(int i = 0; i < imsize; ++ i){

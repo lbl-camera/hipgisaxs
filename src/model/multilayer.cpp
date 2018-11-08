@@ -36,6 +36,7 @@ namespace hig {
     vacuum.refindex(RefractiveIndex(0, 0));
     vacuum.order(0);
     vacuum.thickness(0);
+    vacuum.z_val(0);
     layers_.push_back(vacuum); 
 
     Layer substr;
@@ -52,7 +53,7 @@ namespace hig {
     // z value is measured from the top
     real_t z = 0;
     for (int i = 1; i < layers_.size(); i++){
-      z -= layers_[i].thickness();
+      z += layers_[i].thickness();
       layers_[i].z_val(z);
     }
     return true;
@@ -76,7 +77,7 @@ namespace hig {
     for (int i = 0; i < NL; i++)
       kz[i] = - k0 * std::sqrt(sina * sina - layers_[i].one_minus_n2());
 
-    for (int i = NL-2; i > -1; i--){
+    for (int i = NL-2; i > -1; i--) {
 #ifdef DOUBLEP
       complex_t pij = (kz[i] + kz[i+1])/(2. * kz[i]);
       complex_t mij = (kz[i] - kz[i+1])/(2. * kz[i]);
@@ -93,7 +94,6 @@ namespace hig {
       complex_t a11 = pij * std::conj(exp_m);
       T[i] = a00 * T[i+1] + a01 * R[i+1];
       R[i] = a10 * T[i+1] + a11 * R[i+1];
-
     }
       
     complex_t t0 = T[0];
@@ -132,13 +132,16 @@ namespace hig {
     Ri = coef_in[1];
 
     // Rs and Ts for outgoing
-#pragma omp parallel for
     for (int i = 0; i < nalpha; i++){
       real_t alpha = QGrid::instance().alpha(i);
       if (alpha > 0){
         complex_vec_t coef_out = parratt_recursion(alpha, k0, order);
         Tf[i] = coef_out[0];
         Rf[i] = coef_out[1];
+        if (std::isnan(std::abs(Tf[i])) || std::isnan(std::abs(Rf[i]))){
+            std::cerr << "making nans in propgation_coefs" << std::endl;
+            std::exit(1);
+        }
       }
     }
 
@@ -146,10 +149,10 @@ namespace hig {
 #pragma omp parallel for
     for (int i = 0; i < nqy; i++){
       int j = i / ncol;
-      coeff[i          ] = Ti * std::conj(Tf[j]);
-      coeff[i +     nqy] = Ti * std::conj(Rf[j]);
-      coeff[i + 2 * nqy] = Ri * std::conj(Tf[j]);
-      coeff[i + 3 * nqy] = Ri * std::conj(Rf[j]);
+      coeff[i          ] = Ti * Tf[j];
+      coeff[i +     nqy] = Ti * Rf[j];
+      coeff[i + 2 * nqy] = Ri * Tf[j];
+      coeff[i + 3 * nqy] = Ri * Rf[j];
     }
     return true;
   }

@@ -35,6 +35,7 @@ namespace hig {
     key_.clear();
     order_ = 0;
     thickness_ = 0.0;
+    z_val_ = 0.0;
     refindex_.delta(0.0); refindex_.beta(0.0);
   } // Layer::clear()
 

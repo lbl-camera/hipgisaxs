@@ -31,9 +31,7 @@
 #include <sf/sf.hpp>
 #include <image/image.hpp>
 
-#ifdef YAML
-  #include <config/yaml_input.hpp>
-#endif
+#include <config/yaml_input.hpp>
 
 namespace hig {
 

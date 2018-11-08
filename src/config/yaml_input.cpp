@@ -14,8 +14,6 @@
  *  NON-COMMERCIAL END USER LICENSE AGREEMENT.
  */
 
-#ifdef YAML
-
 #include <cfloat>
 #include <config/yaml_input.hpp>
 #include <utils/utilities.hpp>
@@ -554,5 +552,3 @@ namespace hig {
   }
 
 } // namespace hig
-
-#endif // YAML
