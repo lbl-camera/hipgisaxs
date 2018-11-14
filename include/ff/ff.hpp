@@ -38,8 +38,10 @@ namespace hig {
     private:
       // TODO: fix the numeric and non-numeric version ... unify them ...
       bool is_analytic_;
+      bool is_atomistic_;
       AnalyticFormFactor analytic_ff_;
       NumericFormFactor numeric_ff_;             // same as MFormFactor
+      AtomisticFormFactor atomistic_ff_;
       std::vector <complex_t> ff_;            /* the form factor data */
 
     public:
