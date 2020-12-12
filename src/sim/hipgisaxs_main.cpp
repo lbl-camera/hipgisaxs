@@ -91,10 +91,6 @@ namespace hig {
       input_ = new HiGInput();
       err = input_->construct_input_config(filename);
     } else if ((path.find(".yaml") != std::string::npos ) || (path.find(".yml") != std::string::npos)) {
-<<<<<<< HEAD
-        input_ = new YAMLInput();
-        err = input_->construct_input_config(filename);
-||||||| merged common ancestors
       #ifdef YAML
         input_ = new YAMLInput();
         err = input_->construct_input_config(filename);
@@ -102,10 +98,6 @@ namespace hig {
         std::cerr << "error: HipGISAXS was built without YAML support" << std::endl;
         return false;
       #endif
-=======
-      input_ = new YAMLInput();
-      err = input_->construct_input_config(filename);
->>>>>>> 4abdf332660ef9c3e87ce7d08295f2b83b03d408
     } else {
       std::cerr << "error: unrecogonizable files extension" << std::endl;
       return false;

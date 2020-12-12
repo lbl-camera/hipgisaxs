@@ -17,7 +17,7 @@
 #ifndef _IMAGE_HPP_
 #define _IMAGE_HPP_
 
-#include <boost/gil/gil_all.hpp>
+#include <boost/gil.hpp>
 //#include <boost/gil/extension/numeric/affine.hpp>
 
 #include <common/globals.hpp>

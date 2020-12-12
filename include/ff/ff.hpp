@@ -41,7 +41,7 @@ namespace hig {
       bool is_atomistic_;
       AnalyticFormFactor analytic_ff_;
       NumericFormFactor numeric_ff_;             // same as MFormFactor
-      AtomisticFormFactor atomistic_ff_;
+      //AtomisticFormFactor atomistic_ff_;
       std::vector <complex_t> ff_;            /* the form factor data */
 
     public:
