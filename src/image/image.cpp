@@ -16,7 +16,7 @@
 
 #include <boost/math/special_functions/round.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
-#include <boost/gil/extension/io/tiff.hpp>
+#include <boost/gil/extension/io/tiff_io.hpp>
 
 #include <image/image.hpp>
 #include <numerics/distributions.hpp>
@@ -501,7 +501,7 @@ namespace hig {
     typedef boost::gil::type_from_x_iterator <boost::gil::rgb8_ptr_t> pixel_itr_t;
     pixel_itr_t::view_t view =
           interleaved_view(ny_, nz_, image_buffer_, ny_ * sizeof(boost::gil::rgb8_pixel_t));
-    boost::gil::write_view(filename.c_str(), view, boost::gil::tiff_tag());
+    boost::gil::tiff_write_view(filename.c_str(), view);
     return true;
   } // Image::save()
 
